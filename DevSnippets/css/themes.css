@@ -1,0 +1,103 @@
+/* ============================================================
+   themes.css — Variables de color para Dark y Light mode
+   DevSnippets | Gestor de Conocimiento Técnico
+   ============================================================ */
+
+/* ── Tema Oscuro (por defecto) ── */
+:root,
+[data-theme="dark"] {
+    --bg:              #0d1117;
+    --bg-secondary:    #010409;
+    --surface:         #161b22;
+    --surface-hover:   #21262d;
+    --surface-raised:  #1c2128;
+
+    --border:          #30363d;
+    --border-subtle:   #21262d;
+
+    --text:            #c9d1d9;
+    --text-muted:      #8b949e;
+    --text-subtle:     #6e7681;
+    --text-inverse:    #0d1117;
+
+    --primary:         #58a6ff;
+    --primary-hover:   #79b8ff;
+    --primary-muted:   rgba(88, 166, 255, 0.15);
+
+    --success:         #2ea043;
+    --success-hover:   #3fb950;
+    --success-text:    #56d364;
+
+    --danger:          #f85149;
+    --danger-hover:    #ff7b72;
+    --danger-muted:    rgba(248, 81, 73, 0.15);
+
+    --warning:         #d29922;
+    --fav:             #e3b341;
+
+    --shadow-sm:       0 1px 3px rgba(0,0,0,0.4);
+    --shadow:          0 4px 12px rgba(0,0,0,0.5);
+    --shadow-lg:       0 8px 24px rgba(0,0,0,0.6);
+    --shadow-focus:    0 0 0 3px rgba(88, 166, 255, 0.3);
+
+    /* Colores de Categorías */
+    --cat-blue:        #1f6feb;
+    --cat-green:       #238636;
+    --cat-red:         #da3633;
+    --cat-purple:      #8957e5;
+    --cat-yellow:      #d29922;
+    --cat-cyan:        #388bfd;
+    --cat-orange:      #bd561d;
+    --cat-gray:        #6e7681;
+
+    /* Highlight.js override backdrop */
+    --hljs-bg:         #0d1117;
+}
+
+/* ── Tema Claro ── */
+[data-theme="light"] {
+    --bg:              #f6f8fa;
+    --bg-secondary:    #eaeef2;
+    --surface:         #ffffff;
+    --surface-hover:   #f3f4f6;
+    --surface-raised:  #ffffff;
+
+    --border:          #d0d7de;
+    --border-subtle:   #e8ecf0;
+
+    --text:            #1f2328;
+    --text-muted:      #57606a;
+    --text-subtle:     #8c959f;
+    --text-inverse:    #ffffff;
+
+    --primary:         #0969da;
+    --primary-hover:   #0550ae;
+    --primary-muted:   rgba(9, 105, 218, 0.12);
+
+    --success:         #2da44e;
+    --success-hover:   #1a7f37;
+    --success-text:    #1a7f37;
+
+    --danger:          #cf222e;
+    --danger-hover:    #a40e26;
+    --danger-muted:    rgba(207, 34, 46, 0.1);
+
+    --warning:         #bf8700;
+    --fav:             #bf8700;
+
+    --shadow-sm:       0 1px 3px rgba(27,31,36,0.12);
+    --shadow:          0 3px 8px rgba(27,31,36,0.12);
+    --shadow-lg:       0 8px 24px rgba(27,31,36,0.15);
+    --shadow-focus:    0 0 0 3px rgba(9, 105, 218, 0.25);
+
+    --cat-blue:        #0969da;
+    --cat-green:       #2da44e;
+    --cat-red:         #cf222e;
+    --cat-purple:      #8250df;
+    --cat-yellow:      #bf8700;
+    --cat-cyan:        #0550ae;
+    --cat-orange:      #bc4c00;
+    --cat-gray:        #57606a;
+
+    --hljs-bg:         #f6f8fa;
+}
