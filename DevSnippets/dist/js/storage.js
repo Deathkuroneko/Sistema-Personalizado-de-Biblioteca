@@ -72,16 +72,57 @@ const Storage = (() => {
         return { data, changed };
     }
 
+    const FILE_NAME = 'snippets.json';
+    const DIR_NAME = 'DevSnippets';
+
+    // ── Tauri v2 Detection ───────────────────────────────────
+    // Requiere "withGlobalTauri": true en tauri.conf.json > app
+    // Esto inyecta window.__TAURI__ con todas las APIs del plugin.
+    function _isTauri() {
+        return !!(window.__TAURI__ && window.__TAURI__.fs);
+    }
+
+    function _getFS() {
+        return window.__TAURI__.fs;
+    }
+
     // ── Load ─────────────────────────────────────────────────
-    // TODO (Tauri): Reemplazar con: const raw = await readTextFile('snippets.json');
-    function load() {
+    async function load() {
+        const isTauri = _isTauri();
+        console.info('[Storage] load() — isTauri=' + isTauri, window.__TAURI__ ? '(window.__TAURI__ existe)' : '(window.__TAURI__ NO existe)');
         try {
-            const raw = localStorage.getItem(DB_KEY);
+            let raw = null;
+            if (isTauri) {
+                const { exists, readTextFile, mkdir, BaseDirectory } = _getFS();
+                const filePath = `${DIR_NAME}/${FILE_NAME}`;
+                try {
+                    const dirExists = await exists(DIR_NAME, { baseDir: BaseDirectory.Document });
+                    if (!dirExists) {
+                        await mkdir(DIR_NAME, { baseDir: BaseDirectory.Document, recursive: true });
+                        console.info('[Storage] Carpeta creada: Documentos/' + DIR_NAME);
+                    }
+                    const fileExists = await exists(filePath, { baseDir: BaseDirectory.Document });
+                    if (fileExists) {
+                        raw = await readTextFile(filePath, { baseDir: BaseDirectory.Document });
+                        console.info('[Storage] Archivo leído OK, bytes:', raw?.length);
+                    } else {
+                        console.info('[Storage] Archivo no existe aún — se creará al primer save().');
+                    }
+                } catch (fsErr) {
+                    console.error('[Storage] Error FS — fallback a localStorage:', fsErr);
+                    raw = localStorage.getItem(DB_KEY);
+                }
+            } else {
+                raw = localStorage.getItem(DB_KEY);
+                console.info('[Storage] Usando localStorage, datos:', raw ? 'Sí (' + (raw?.length ?? 0) + ' bytes)' : 'Vacío');
+            }
+
             const parsed = raw ? JSON.parse(raw) : [];
             if (!Array.isArray(parsed)) throw new Error('Formato inválido');
             const { data, changed } = _migrate(parsed);
             _db = data;
-            if (changed) _persist();
+            console.info('[Storage] DB lista. Títulos:', _db.length);
+            if (changed) await _persist();
         } catch (e) {
             console.error('[Storage] Error cargando datos:', e);
             _db = [];
@@ -90,18 +131,30 @@ const Storage = (() => {
     }
 
     // ── Save / Persist ────────────────────────────────────────
-    // TODO (Tauri): Reemplazar con: await writeTextFile('snippets.json', JSON.stringify(_db, null, 2));
-    function _persist() {
-        try {
-            localStorage.setItem(DB_KEY, JSON.stringify(_db));
-        } catch (e) {
-            console.error('[Storage] Error guardando datos:', e);
+    async function _persist() {
+        const json = JSON.stringify(_db, null, 2);
+        if (_isTauri()) {
+            try {
+                const { writeTextFile, BaseDirectory } = _getFS();
+                await writeTextFile(`${DIR_NAME}/${FILE_NAME}`, json, { baseDir: BaseDirectory.Document });
+                console.info('[Storage] Guardado en disco OK — Documentos/' + DIR_NAME + '/' + FILE_NAME);
+            } catch (e) {
+                console.error('[Storage] Error al escribir en disco, fallback a localStorage:', e);
+                localStorage.setItem(DB_KEY, json);
+                throw e;
+            }
+        } else {
+            localStorage.setItem(DB_KEY, json);
         }
     }
 
-    function save(reRender = true) {
-        _persist();
+    async function save(reRender = true) {
         if (reRender && typeof Render !== 'undefined') Render.render();
+        try {
+            await _persist();
+        } catch (e) {
+            if (typeof App !== 'undefined') App.showToast('Error al guardar: ' + e.message, false);
+        }
     }
 
     // ── Undo / Redo ───────────────────────────────────────────

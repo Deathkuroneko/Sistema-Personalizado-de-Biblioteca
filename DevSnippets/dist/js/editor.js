@@ -69,7 +69,7 @@ const Editor = (() => {
         if (summaryEl) _startCatEdit(summaryEl, tIdx, cIdx, false);
     }
 
-    // ── SUBTÍTULOS ────────────────────────────────────────────
+    // ── SUBTÍTULOS ──────────────────────────────────────────────
     function addSubtitle(e, tIdx, cIdx) {
         _stopAndClose(e);
         const catObj = Storage.getDB()[tIdx].categories[cIdx];
@@ -78,11 +78,17 @@ const Editor = (() => {
 
         Storage.saveStateForUndo();
         const id = Storage.generateId();
+        // BUGFIX: unshift y save faltaban — el elemento nunca se creaba en el DOM
+        catObj.subtitles.unshift({ id, title: '', isMain: true, parentIds: [], snippets: [] });
+        Storage.save(true);
+
         setTimeout(() => {
             const summaryEl = document.querySelector(`#s_${id} > summary`);
             if (summaryEl) {
                 App.expandParents(summaryEl);
                 _startSubEdit(summaryEl, tIdx, cIdx, 0, true);
+            } else {
+                console.warn('[Editor] addSubtitle: no se encontró #s_' + id + ' tras render');
             }
         }, 60);
     }

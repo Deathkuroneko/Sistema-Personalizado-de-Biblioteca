@@ -1,0 +1,53 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "DevSnippets",
+  "version": "1.0.0",
+  "identifier": "com.death.devsnippets",
+  "build": {
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "DevSnippets",
+        "width": 1280,
+        "height": 800,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "app"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "publisher": "death",
+    "copyright": "© 2025 death. Todos los derechos reservados.",
+    "category": "DeveloperTool",
+    "shortDescription": "Gestor de snippets y conocimiento técnico",
+    "longDescription": "DevSnippets es una aplicación de escritorio offline para organizar y gestionar snippets de código y conocimiento técnico de forma estructurada.",
+    "windows": {
+      "allowDowngrades": false,
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "headerImage": "icons/128x128.png",
+        "sidebarImage": "icons/128x128@2x.png",
+        "installMode": "perMachine",
+        "languages": ["SpanishInternational", "English"],
+        "displayLanguageSelector": true,
+        "startMenuFolder": "DevSnippets",
+        "compression": "lzma"
+      }
+    }
+  }
+}

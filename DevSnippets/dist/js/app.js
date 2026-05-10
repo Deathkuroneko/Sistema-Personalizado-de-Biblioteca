@@ -9,10 +9,10 @@ const App = (() => {
     let _toastTimeout   = null;
 
     // ── Inicialización ────────────────────────────────────────
-    function init() {
+    async function init() {
         _applyStoredTheme();
-        _migrateFromLegacy();   // migrar datos del archivo viejo (una sola vez)
-        Storage.load();
+        await Storage.load();
+        await _migrateFromLegacy();   // migrar datos del archivo viejo si el DB nuevo está vacío
         Sidebar.init();
         Render.render();
         _bindGlobalEvents();
@@ -21,28 +21,24 @@ const App = (() => {
     // ── Migración desde versión anterior (snippetsDBUltra) ────
     // Si el nuevo DB está vacío pero el viejo tiene datos, los importa automáticamente.
     // Se ejecuta solo una vez; marca el flag 'devSnippets_migrated' para no repetir.
-    function _migrateFromLegacy() {
+    async function _migrateFromLegacy() {
         const MIGRATED_KEY = 'devSnippets_migrated';
         const LEGACY_KEY   = 'snippetsDBUltra';
-        const NEW_KEY      = 'devSnippets_db';
 
         if (localStorage.getItem(MIGRATED_KEY)) return; // ya migrado
 
         const legacyRaw = localStorage.getItem(LEGACY_KEY);
-        const newRaw    = localStorage.getItem(NEW_KEY);
-
-        // Solo migrar si hay datos viejos y la nueva BD está vacía o no existe
         if (!legacyRaw) { localStorage.setItem(MIGRATED_KEY, '1'); return; }
 
-        let newDB = [];
-        try { newDB = JSON.parse(newRaw) || []; } catch { newDB = []; }
-
-        if (newDB.length > 0) { localStorage.setItem(MIGRATED_KEY, '1'); return; }
+        // Si la base de datos actual ya tiene datos, no migramos
+        const currentDB = Storage.getDB();
+        if (currentDB.length > 0) { localStorage.setItem(MIGRATED_KEY, '1'); return; }
 
         try {
             const legacyData = JSON.parse(legacyRaw);
             if (Array.isArray(legacyData) && legacyData.length > 0) {
-                localStorage.setItem(NEW_KEY, JSON.stringify(legacyData));
+                Storage.setDB(legacyData);
+                await Storage.save(false);
                 console.info('[DevSnippets] Datos migrados desde snippetsDBUltra ✓');
             }
         } catch (e) {
@@ -153,9 +149,13 @@ const App = (() => {
     }
 
     // ── Export / Import / Save ────────────────────────────────
-    function saveManual() {
-        Storage.save(false); // TODO(Tauri): Aquí se llamará a writeTextFile
-        showToast('Guardado correctamente.', false);
+    async function saveManual() {
+        try {
+            await Storage.save(false);
+            showToast('Guardado correctamente.', false);
+        } catch (e) {
+            showToast('Error al guardar.', false);
+        }
     }
 
     function exportJSON() {
