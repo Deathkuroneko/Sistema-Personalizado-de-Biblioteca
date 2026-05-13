@@ -52,9 +52,17 @@
 
     /* Highlight.js override backdrop */
     --hljs-bg:         #0d1117;
+
+    /* Código — Números de línea */
+    --line-num-color:  #4a5568;
+    --line-num-border: #2d333b;
+    --line-num-bg:     rgba(45, 51, 59, 0.6);
+
+    /* Código — bloque */
+    --code-text:       #c9d1d9;
 }
 
-/* ── Tema Claro ── */
+/* ── Tema Claro — mejorado para máximo contraste ── */
 [data-theme="light"] {
     --bg:              #f6f8fa;
     --bg-secondary:    #eaeef2;
@@ -63,31 +71,31 @@
     --surface-raised:  #ffffff;
 
     --border:          #d0d7de;
-    --border-subtle:   #e8ecf0;
+    --border-subtle:   #dde1e6;
 
     --text:            #1f2328;
-    --text-muted:      #57606a;
-    --text-subtle:     #8c959f;
+    --text-muted:      #424a53;
+    --text-subtle:     #6e7781;
     --text-inverse:    #ffffff;
 
     --primary:         #0969da;
     --primary-hover:   #0550ae;
-    --primary-muted:   rgba(9, 105, 218, 0.12);
+    --primary-muted:   rgba(9, 105, 218, 0.10);
 
     --success:         #2da44e;
     --success-hover:   #1a7f37;
-    --success-text:    #1a7f37;
+    --success-text:    #116329;
 
     --danger:          #cf222e;
     --danger-hover:    #a40e26;
-    --danger-muted:    rgba(207, 34, 46, 0.1);
+    --danger-muted:    rgba(207, 34, 46, 0.08);
 
     --warning:         #bf8700;
-    --fav:             #bf8700;
+    --fav:             #9a6700;
 
     --shadow-sm:       0 1px 3px rgba(27,31,36,0.12);
-    --shadow:          0 3px 8px rgba(27,31,36,0.12);
-    --shadow-lg:       0 8px 24px rgba(27,31,36,0.15);
+    --shadow:          0 3px 8px rgba(27,31,36,0.15);
+    --shadow-lg:       0 8px 24px rgba(27,31,36,0.18);
     --shadow-focus:    0 0 0 3px rgba(9, 105, 218, 0.25);
 
     --cat-blue:        #0969da;
@@ -97,7 +105,16 @@
     --cat-yellow:      #bf8700;
     --cat-cyan:        #0550ae;
     --cat-orange:      #bc4c00;
-    --cat-gray:        #57606a;
+    --cat-gray:        #424a53;
 
-    --hljs-bg:         #f6f8fa;
+    /* Código en tema claro: fondo oscuro para mantener legibilidad de hljs */
+    --hljs-bg:         #1e2228;
+
+    /* Números de línea en tema claro (sobre fondo oscuro del bloque de código) */
+    --line-num-color:  #6e7781;
+    --line-num-border: #30363d;
+    --line-num-bg:     rgba(20, 25, 32, 0.7);
+
+    /* Código — el texto del pre lo gestiona hljs, pero forzamos legibilidad */
+    --code-text:       #c9d1d9;
 }

@@ -155,43 +155,127 @@ button {
     to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* ── Sidebar Nav ── */
-.nav-section { margin-bottom: 4px; }
+/* ══════════════════════════════════════════════════════════════
+   ── Sidebar Nav (Mejora 4 — Jerárquico)
+   ══════════════════════════════════════════════════════════════ */
 
+.nav-empty {
+    font-size: 0.8em;
+    color: var(--text-subtle);
+    padding: 8px 10px;
+    margin: 0;
+}
+
+.nav-section {
+    margin-bottom: 2px;
+}
+
+/* ─ Fila de Título ─ */
 .nav-title-item {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 7px 10px;
-    color: var(--text-muted);
+    gap: 5px;
+    padding: 6px 8px;
     border-radius: 6px;
-    font-size: 0.875em;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
+    transition: background 0.15s;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
 }
-.nav-title-item:hover { background: var(--surface-hover); color: var(--text); }
-.nav-title-item svg { flex-shrink: 0; color: var(--text-subtle); }
+.nav-title-item:hover { background: var(--surface-hover); }
 
+/* ─ Fila de Categoría ─ */
 .nav-cat-item {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 5px 10px 5px 26px;
-    color: var(--text-subtle);
+    gap: 5px;
+    padding: 5px 8px 5px 20px;
     border-radius: 5px;
-    font-size: 0.82em;
+    transition: background 0.15s;
+    overflow: hidden;
+    white-space: nowrap;
+}
+.nav-cat-item:hover { background: var(--surface-hover); }
+
+.nav-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+/* ─ Fila de Subtítulo ─ */
+.nav-sub-list {
+    padding-left: 36px;
+}
+.nav-sub-list.nav-hidden { display: none; }
+
+.nav-sub-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-size: 0.80em;
+    color: var(--text-subtle);
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
     overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
 }
-.nav-cat-item:hover { background: var(--surface-hover); color: var(--text-muted); }
-.nav-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.nav-sub-item:hover { background: var(--surface-hover); color: var(--text-muted); }
+.nav-sub-item.nav-active { background: var(--primary-muted); color: var(--primary); font-weight: 600; }
+.nav-sub-item.nav-sub-sec { color: var(--text-subtle); opacity: 0.8; }
+
+.nav-sub-icon {
+    font-size: 0.75em;
+    color: var(--text-subtle);
+    flex-shrink: 0;
+    width: 12px;
+    text-align: center;
+    font-family: monospace;
+}
+
+.nav-sub-count {
+    margin-left: auto;
+    background: var(--border);
+    color: var(--text-subtle);
+    font-size: 0.75em;
+    padding: 0 5px;
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+
+/* ─ Etiqueta clicable ─ */
+.nav-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.875em;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-weight: 600;
+}
+.nav-cat-item .nav-label { font-weight: 400; color: var(--text-subtle); font-size: 0.82em; }
+.nav-label:hover { color: var(--text); }
+
+/* ─ Botón expandir/colapsar ─ */
+.nav-expand-btn {
+    background: transparent;
+    border: none;
+    padding: 2px;
+    border-radius: 3px;
+    color: var(--text-subtle);
+    flex-shrink: 0;
+    line-height: 0;
+    transition: transform 0.2s, color 0.15s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.nav-expand-btn:hover { color: var(--text-muted); background: var(--surface-hover); }
+.nav-expand-btn.open svg { transform: rotate(90deg); }
+.nav-expand-btn svg { transition: transform 0.2s; pointer-events: none; }
+
+.nav-expand-sm { padding: 1px; }
+
+/* ─ Hijos ocultos ─ */
+.nav-children { overflow: hidden; }
+.nav-children.nav-hidden { display: none; }
 
 /* ── Acordeones ── */
 details { transition: background 0.2s; }
@@ -237,6 +321,9 @@ details[open] > summary .arrow-icon { transform: rotate(90deg); color: var(--pri
     transition: box-shadow 0.2s;
 }
 .title-card:hover { box-shadow: var(--shadow); }
+/* Ghost state para drag de títulos */
+.title-card.sortable-ghost { opacity: 0.35; border: 2px dashed var(--primary); background: var(--primary-muted); }
+.title-card.sortable-chosen { box-shadow: var(--shadow-lg); }
 
 .title-summary {
     padding: 16px 18px;
@@ -314,31 +401,81 @@ details[open] > .sub-summary { border-radius: 8px 8px 0 0; }
     gap: 2px;
 }
 .sub-name { font-size: 0.9em; color: var(--text); }
+
+/* ── Asociaciones Colapsables (Mejora 3) ─────────────────── */
+.assoc-collapsible {
+    margin-top: 3px;
+}
+
 .sub-assoc {
     font-size: 0.75em;
     color: var(--text-subtle);
     display: block;
-    white-space: normal;
-    word-wrap: break-word;
 }
+
+/* Botón toggle de asociaciones */
+.assoc-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    border-radius: 4px;
+    color: var(--text-subtle);
+    font-size: 0.85em;
+    font-family: inherit;
+    padding: 2px 5px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+}
+.assoc-toggle:hover { background: var(--primary-muted); color: var(--primary); }
+.assoc-toggle svg { pointer-events: none; }
+
+/* Chevron del toggle rota al abrir */
+.assoc-chevron {
+    display: inline-flex;
+    align-items: center;
+    transition: transform 0.2s;
+}
+.assoc-collapsible.open .assoc-chevron { transform: rotate(180deg); }
+
+/* Lista de asociaciones (oculta por defecto) */
+.assoc-list {
+    display: none;
+    margin: 4px 0 2px 8px;
+    padding: 0;
+    list-style: none;
+    flex-direction: column;
+    gap: 3px;
+    border-left: 2px solid var(--border-subtle);
+    padding-left: 8px;
+}
+.assoc-collapsible.open .assoc-list {
+    display: flex;
+}
+
 .assoc-link {
     background: none;
     border: none;
     color: var(--primary);
     font-size: inherit;
     font-family: inherit;
-    padding: 0;
+    padding: 1px 4px;
     cursor: pointer;
     text-align: left;
     white-space: normal;
     word-wrap: break-word;
+    border-radius: 3px;
     opacity: 0.85;
-    transition: opacity 0.2s, text-decoration 0.2s;
+    transition: opacity 0.2s, background 0.15s;
 }
 .assoc-link:hover {
     opacity: 1;
+    background: var(--primary-muted);
     text-decoration: underline;
 }
+
 .icon-main {
     color: var(--primary);
     filter: drop-shadow(0 0 3px rgba(31,111,235,0.4));
@@ -358,6 +495,10 @@ details[open] > .sub-summary { border-radius: 8px 8px 0 0; }
     border-radius: 0 0 8px 8px;
 }
 
+/* Sortable feedback — niveles */
+.sub-card.sortable-ghost   { opacity: 0.4; border: 2px dashed var(--primary); }
+.cat-card.sortable-ghost   { opacity: 0.4; border-left: 4px dashed var(--primary); }
+
 /* ── Snippet Cards ── */
 .snippet-card {
     background: var(--surface);
@@ -370,14 +511,10 @@ details[open] > .sub-summary { border-radius: 8px 8px 0 0; }
 }
 .snippet-card:hover { box-shadow: var(--shadow); border-color: var(--text-subtle); }
 
-/* Sortable feedback */
+/* Sortable feedback — snippets */
 .snippet-card.sortable-ghost  { opacity: 0.4; border: 2px dashed var(--primary); background: var(--primary-muted); }
 .snippet-card.sortable-chosen { transform: rotate(1deg); box-shadow: var(--shadow-lg); }
 .snippet-card.sortable-drag   { opacity: 1; }
-
-/* Sub sortable ghost */
-.sub-card.sortable-ghost { opacity: 0.4; border: 2px dashed var(--primary); }
-.cat-card.sortable-ghost { opacity: 0.4; border-left: 4px dashed var(--primary); }
 
 .snippet-header {
     display: flex;
@@ -418,52 +555,62 @@ details[open] > .sub-summary { border-radius: 8px 8px 0 0; }
     background: transparent;
     border-radius: 4px;
     line-height: 0;
+    touch-action: none;   /* Importante: evita conflicto con scroll táctil en WebView2 */
 }
 .drag-handle:hover { color: var(--text-muted); background: var(--surface-hover); }
 .drag-handle:active { cursor: grabbing; }
 
-/* ── Bloque de Código (Highlight.js) ── */
+/* ══════════════════════════════════════════════════════════════
+   ── Bloque de Código (Mejora 2 — Contraste modo claro)
+   ══════════════════════════════════════════════════════════════ */
+
 .code-block-wrapper {
     position: relative;
     border-radius: 8px;
     overflow: hidden;
     border: 1px solid var(--border);
+    /* En modo claro la sombra sutil ayuda a delimitar el bloque oscuro */
+    box-shadow: inset 0 1px 4px rgba(0,0,0,0.08);
 }
+
 .code-block-wrapper pre {
     margin: 0;
     padding: 14px 14px 14px 50px;
     font-family: 'Consolas', 'Cascadia Code', 'Fira Code', monospace;
     font-size: 0.875em;
-    line-height: 1.55;
+    line-height: 1.6;
     overflow-x: auto;
     background: var(--hljs-bg) !important;
+    color: var(--code-text);
 }
+
 .code-block-wrapper code {
     font-family: inherit;
     background: none !important;
     padding: 0 !important;
     font-size: 1em;
 }
-/* Números de línea */
+
+/* Números de línea — usa las variables de tema para contraste */
 .line-nums {
     position: absolute;
     left: 0;
     top: 0;
     bottom: 0;
-    width: 36px;
-    background: rgba(128,128,128,0.06);
-    border-right: 1px solid var(--border);
-    padding: 14px 0;
+    width: 38px;
+    background: var(--line-num-bg);
+    border-right: 1px solid var(--line-num-border);
+    padding: 14px 6px 14px 0;
     text-align: right;
-    color: var(--text-subtle);
+    color: var(--line-num-color);
     font-family: 'Consolas', 'Cascadia Code', 'Fira Code', monospace;
     font-size: 0.875em;
-    line-height: 1.55;
+    line-height: 1.6;
     user-select: none;
-    padding-right: 6px;
     white-space: pre;
     overflow: hidden;
 }
+
 /* Botón Copiar */
 .copy-btn {
     position: absolute;
@@ -529,12 +676,12 @@ details[open] > .sub-summary { border-radius: 8px 8px 0 0; }
     width: 100%;
     background: var(--hljs-bg);
     border: 1.5px solid var(--primary);
-    color: var(--text);
+    color: var(--code-text);
     padding: 12px;
     border-radius: 6px;
     font-family: 'Consolas', 'Cascadia Code', monospace;
     font-size: 0.875em;
-    line-height: 1.55;
+    line-height: 1.6;
     min-height: 120px;
     resize: vertical;
     outline: none;
@@ -614,8 +761,8 @@ details[open] > .sub-summary { border-radius: 8px 8px 0 0; }
 
 /* Animations */
 @keyframes pulseHighlight {
-    0% { box-shadow: 0 0 0 0 rgba(31,111,235,0.7); }
-    70% { box-shadow: 0 0 0 10px rgba(31,111,235,0); }
+    0%   { box-shadow: 0 0 0 0 rgba(31,111,235,0.7); }
+    70%  { box-shadow: 0 0 0 10px rgba(31,111,235,0); }
     100% { box-shadow: 0 0 0 0 rgba(31,111,235,0); }
 }
 
