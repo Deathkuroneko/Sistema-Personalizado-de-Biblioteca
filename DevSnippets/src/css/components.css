@@ -1,0 +1,24 @@
+/* Minimal components styles needed in src for draft badge */
+
+/* Draft badge for staged images */
+.snippet-edit-form .image-preview .draft-badge {
+    display:inline-block;
+    background: rgba(255, 193, 7, 0.12);
+    color: var(--text-muted);
+    border: 1px solid rgba(255, 193, 7, 0.25);
+    padding: 2px 6px;
+    font-size: 11px;
+    border-radius: 999px;
+    margin-left: 8px;
+}
+
+/* Rollback: hide permanent inline block controls by default.
+   Show them only when the snippet card is hovered, focused, or editing. */
+.copy-btn, .copy-btn.add-block-btn, .copy-btn.remove-block-btn, .copy-btn.expand-btn {
+    display: none !important;
+}
+.snippet-card:hover .copy-btn,
+.snippet-card.editing .copy-btn,
+.snippet-card:focus-within .copy-btn {
+    display: inline-flex !important;
+}

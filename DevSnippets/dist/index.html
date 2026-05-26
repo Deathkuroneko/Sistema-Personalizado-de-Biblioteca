@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="css/themes.css">
     <link rel="stylesheet" href="css/layout.css">
     <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/media.css">
 </head>
 <body>
 
@@ -113,6 +114,47 @@
     </div>
 
     <!-- ════════════════════════════════════════════
+         MODALES Y DRAWERS
+         ════════════════════════════════════════════ -->
+
+    <!-- Modal: Selección de Tipo -->
+    <div id="type-modal-backdrop" class="modal-backdrop"></div>
+    <div id="type-modal" class="type-modal">
+        <div class="type-modal-header">
+            <h3>Nuevo Título</h3>
+            <button class="btn-icon type-modal-close" title="Cerrar">
+                <svg data-lucide="x" width="16" height="16"></svg>
+            </button>
+        </div>
+        <div class="type-options">
+            <button class="type-option-btn" data-type="technical">
+                <svg data-lucide="code-2" width="24" height="24" style="color:var(--primary)"></svg>
+                <strong>Técnico</strong>
+                <span>Snippets, código, documentación.</span>
+            </button>
+            <button class="type-option-btn" data-type="media">
+                <svg data-lucide="film" width="24" height="24" style="color:var(--status-watching)"></svg>
+                <strong>Biblioteca / Media</strong>
+                <span>Fichas con portada, tags y notas.</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Drawer Lateral: Editor Media -->
+    <div id="media-drawer-backdrop" class="modal-backdrop"></div>
+    <div id="media-drawer" class="media-drawer">
+        <div class="drawer-header">
+            <h3 id="media-drawer-title">Ficha</h3>
+            <button class="btn-icon danger-hover" onclick="EditorMedia.closeDrawer()" title="Cerrar">
+                <svg data-lucide="x" width="16" height="16"></svg>
+            </button>
+        </div>
+        <div id="media-drawer-body" class="drawer-body">
+            <!-- Autogenerado por editor-media.js -->
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════
          TOAST DE NOTIFICACIONES
          ════════════════════════════════════════════ -->
     <div id="toast" role="status" aria-live="polite">
@@ -137,9 +179,16 @@
          MÓDULOS DE LA APLICACIÓN
          (Orden importante: dependencias primero)
          ════════════════════════════════════════════ -->
+    <script src="js/schema.js"></script>
     <script src="js/storage.js"></script>
+    <script src="js/attachments.js"></script>
+    <script src="js/tags.js"></script>
     <script src="js/search.js"></script>
     <script src="js/sidebar.js"></script>
+    <script src="js/render-technical.js"></script>
+    <script src="js/view-media.js"></script>
+    <script src="js/render-media.js"></script>
+    <script src="js/editor-media.js"></script>
     <script src="js/editor.js"></script>
     <script src="js/render.js"></script>
     <script src="js/app.js"></script>

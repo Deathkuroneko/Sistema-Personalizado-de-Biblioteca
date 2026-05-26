@@ -7,6 +7,7 @@
   ],
   "permissions": [
     "core:default",
+    "core:path:default",
     "fs:allow-document-read-recursive",
     "fs:allow-document-write-recursive",
     "fs:allow-document-meta-recursive",

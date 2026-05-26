@@ -9,13 +9,13 @@
  */
 
 const Storage = (() => {
-    const DB_KEY = 'devSnippets_db';
+    const DB_KEY     = 'devSnippets_db';
     const UNDO_LIMIT = 30;
 
     // DB root v2
-    let _db = { titles: [], tags: [] };
-    let _undoStack = [];
-    let _redoStack = [];
+    let _db         = { titles: [], tags: [] };
+    let _undoStack  = [];
+    let _redoStack  = [];
 
     // ── ID Generator ──────────────────────────────────────────
     function generateId() {
@@ -66,12 +66,12 @@ const Storage = (() => {
                 if (!titleObj.categories) { titleObj.categories = []; changed = true; }
 
                 titleObj.categories.forEach(cat => {
-                    if (!cat.id) { cat.id = generateId(); changed = true; }
-                    if (!cat.color) { cat.color = 'gray'; changed = true; }
+                    if (!cat.id)        { cat.id = generateId(); changed = true; }
+                    if (!cat.color)     { cat.color = 'gray'; changed = true; }
                     if (!cat.subtitles) { cat.subtitles = []; changed = true; }
 
                     cat.subtitles.forEach(sub => {
-                        if (!sub.id) { sub.id = generateId(); changed = true; }
+                        if (!sub.id)      { sub.id = generateId(); changed = true; }
                         if (sub.isMain === undefined) { sub.isMain = true; changed = true; }
 
                         if (sub.parentIds === undefined) {
@@ -82,10 +82,10 @@ const Storage = (() => {
                         if (!sub.snippets) { sub.snippets = []; changed = true; }
 
                         sub.snippets.forEach(snip => {
-                            if (!snip.id) { snip.id = generateId(); changed = true; }
+                            if (!snip.id)              { snip.id = generateId(); changed = true; }
                             if (snip.fav === undefined) { snip.fav = false; changed = true; }
-                            if (!snip.description) { snip.description = ''; changed = true; }
-                            if (!snip.contentType) { snip.contentType = 'code'; changed = true; }
+                            if (!snip.description)     { snip.description = ''; changed = true; }
+                            if (!snip.contentType)    { snip.contentType = 'code'; changed = true; }
                             if (snip.blockTitle === undefined) { snip.blockTitle = ''; changed = true; }
                         });
                     });
@@ -96,14 +96,14 @@ const Storage = (() => {
             if (titleObj.type === 'media') {
                 if (!titleObj.collections) { titleObj.collections = []; changed = true; }
                 titleObj.collections.forEach(col => {
-                    if (!col.id) { col.id = generateId(); changed = true; }
+                    if (!col.id)    { col.id = generateId(); changed = true; }
                     if (!col.cards) { col.cards = []; changed = true; }
                     col.cards.forEach(card => {
-                        if (!card.id) { card.id = generateId(); changed = true; }
-                        if (!card.tags) { card.tags = []; changed = true; }
+                        if (!card.id)           { card.id = generateId(); changed = true; }
+                        if (!card.tags)         { card.tags = []; changed = true; }
                         if (!card.customFields) { card.customFields = []; changed = true; }
-                        if (!card.links) { card.links = []; changed = true; }
-                        if (!card.status) { card.status = 'Sin estado'; changed = true; }
+                        if (!card.links)        { card.links = []; changed = true; }
+                        if (!card.status)       { card.status = 'Sin estado'; changed = true; }
                     });
                 });
             }
@@ -121,8 +121,8 @@ const Storage = (() => {
     function _getFS() { return window.__TAURI__.fs; }
 
     const FILE_NAME = 'snippets.json';
-    const DIR_NAME = 'DevSnippets';
-    const ATT_DIR = 'DevSnippets/attachments';
+    const DIR_NAME  = 'DevSnippets';
+    const ATT_DIR   = 'DevSnippets/attachments';
 
     // ── Load ──────────────────────────────────────────────────
     async function load() {
@@ -170,7 +170,7 @@ const Storage = (() => {
             console.info('[Storage] DB lista. Títulos:', _db.titles.length, '| Tags:', _db.tags.length);
             if (changed) await _persist();
 
-        } catch (e) {
+n        } catch (e) {
             console.error('[Storage] Error cargando datos:', e);
             _db = { titles: [], tags: [] };
         }
@@ -233,9 +233,9 @@ const Storage = (() => {
     function canRedo() { return _redoStack.length > 0; }
 
     // ── Getters / Setters ─────────────────────────────────────
-    function getDB() { return _db; }
+    function getDB()     { return _db; }
     function getTitles() { return _db.titles; }
-    function getTags() { return _db.tags; }
+    function getTags()   { return _db.tags; }
 
     /** Compatibilidad con código legacy que usaba getDB() como array */
     function setDB(d) {
@@ -248,16 +248,16 @@ const Storage = (() => {
 
     // ── Rutas de attachments ──────────────────────────────────
     function getAttachmentsDir() { return ATT_DIR; }
-    function getDocDir() { return DIR_NAME; }
+    function getDocDir()         { return DIR_NAME; }
 
     // ── Export / Import ───────────────────────────────────────
     function exportJSON() {
         const date = new Date().toISOString().split('T')[0];
         const json = JSON.stringify(_db, null, 2);
         const blob = new Blob([json], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
         a.download = `dev-snippets-${date}.json`;
         document.body.appendChild(a);
         a.click();
@@ -289,7 +289,7 @@ const Storage = (() => {
     // ── Migración legacy (snippetsDBUltra) ────────────────────
     async function migrateFromLegacy() {
         const MIGRATED_KEY = 'devSnippets_migrated';
-        const LEGACY_KEY = 'snippetsDBUltra';
+        const LEGACY_KEY   = 'snippetsDBUltra';
         if (localStorage.getItem(MIGRATED_KEY)) return;
         const legacyRaw = localStorage.getItem(LEGACY_KEY);
         if (!legacyRaw) { localStorage.setItem(MIGRATED_KEY, '1'); return; }
@@ -308,9 +308,9 @@ const Storage = (() => {
     }
 
     // ── CRUD Helpers — Técnico ────────────────────────────────
-    function getTitle(tIdx) { return _db.titles[tIdx]; }
-    function getCat(tIdx, cIdx) { return _db.titles[tIdx].categories[cIdx]; }
-    function getSub(tIdx, cIdx, sIdx) { return _db.titles[tIdx].categories[cIdx].subtitles[sIdx]; }
+    function getTitle(tIdx)               { return _db.titles[tIdx]; }
+    function getCat(tIdx, cIdx)           { return _db.titles[tIdx].categories[cIdx]; }
+    function getSub(tIdx, cIdx, sIdx)     { return _db.titles[tIdx].categories[cIdx].subtitles[sIdx]; }
     function getSnip(tIdx, cIdx, sIdx, snIdx) {
         return _db.titles[tIdx].categories[cIdx].subtitles[sIdx].snippets[snIdx];
     }
@@ -341,13 +341,13 @@ const Storage = (() => {
     }
 
     // ── CRUD Helpers — Media ──────────────────────────────────
-    function getCollection(tIdx, colIdx) { return _db.titles[tIdx].collections[colIdx]; }
-    function getCard(tIdx, colIdx, cardIdx) { return _db.titles[tIdx].collections[colIdx].cards[cardIdx]; }
+    function getCollection(tIdx, colIdx)          { return _db.titles[tIdx].collections[colIdx]; }
+    function getCard(tIdx, colIdx, cardIdx)       { return _db.titles[tIdx].collections[colIdx].cards[cardIdx]; }
 
-    // ── CRUD Helpers — Tags ───────────────────────────────────
+n    // ── CRUD Helpers — Tags ───────────────────────────────────
     function findTagById(id) { return _db.tags.find(t => t.id === id) || null; }
 
-    // ── Find by ID helpers (return item + indices)
+n    // ── Find by ID helpers (return item + indices)
     function findTitleById(id) {
         for (let tIdx = 0; tIdx < _db.titles.length; tIdx++) {
             const t = _db.titles[tIdx];
@@ -356,7 +356,7 @@ const Storage = (() => {
         return null;
     }
 
-    function findCategoryById(id) {
+n    function findCategoryById(id) {
         for (let tIdx = 0; tIdx < _db.titles.length; tIdx++) {
             const t = _db.titles[tIdx];
             if (!t.categories) continue;
@@ -450,7 +450,7 @@ const Storage = (() => {
         if (!found) return false;
         const { tIdx, cIdx, sIdx, snIdx } = found;
         saveStateForUndo();
-        try { if (typeof Drafts !== 'undefined' && Drafts.discard) Drafts.discard(id); } catch (e) { }
+        try { if (typeof Drafts !== 'undefined' && Drafts.discard) Drafts.discard(id); } catch (e) { /* ignore */ }
         _db.titles[tIdx].categories[cIdx].subtitles[sIdx].snippets.splice(snIdx, 1);
         save(true);
         return true;
@@ -589,12 +589,19 @@ const Storage = (() => {
                 if (!fname) continue;
                 if (!used.has(fname)) {
                     try {
+                        // Try available fs removal methods safely (different tauri/plugin versions)
                         const targetPath = `${attDir}/${fname}`;
                         const remover = fs.removeFile || fs.remove || fs.unlink;
                         if (typeof remover === 'function') {
                             await remover(targetPath, { baseDir: BaseDirectory.Document });
                         } else if (window.__TAURI__ && window.__TAURI__.tauri && window.__TAURI__.tauri.invoke) {
-                            await window.__TAURI__.tauri.invoke('plugin:fs|remove_file', { path: targetPath, baseDir: BaseDirectory.Document });
+                            // Best-effort fallback via invoke for plugin API (may vary by setup)
+                            try {
+                                await window.__TAURI__.tauri.invoke('plugin:fs|remove_file', { path: targetPath, baseDir: BaseDirectory.Document });
+                            } catch (invErr) {
+                                console.warn('[Storage] invoke fallback failed for remove_file', invErr);
+                                throw invErr;
+                            }
                         } else {
                             throw new Error('No fs remove function available');
                         }

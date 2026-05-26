@@ -150,7 +150,7 @@ body {
 /* ── Contenedor de Tarjetas ── */
 #app-container {
     padding: 28px;
-    max-width: 1100px;
+    max-width: 1800px;
     margin: 0 auto;
     width: 100%;
 }

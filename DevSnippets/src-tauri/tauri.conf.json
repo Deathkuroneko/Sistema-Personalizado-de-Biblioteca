@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "DevSnippets",
-  "version": "1.5.0",
+  "version": "1.9.0",
   "identifier": "com.death.devsnippets",
   "build": {
     "frontendDist": "../dist"
@@ -18,7 +18,11 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["**"]
+      }
     }
   },
   "bundle": {

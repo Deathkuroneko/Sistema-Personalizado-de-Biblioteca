@@ -17,7 +17,7 @@ const Editor = (() => {
         return `<svg data-lucide="${name}" width="${size}" height="${size}"></svg>`;
     }
     function _escape(t = '') {
-        return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
     function _stopAndClose(e) {
         if (e) { e.preventDefault(); e.stopPropagation(); }
@@ -33,7 +33,7 @@ const Editor = (() => {
     }
 
     function _openTypeModal() {
-        const modal = document.getElementById('type-modal');
+        const modal    = document.getElementById('type-modal');
         const backdrop = document.getElementById('type-modal-backdrop');
         if (!modal || !backdrop) return;
 
@@ -109,7 +109,7 @@ const Editor = (() => {
     function addCategory(e, tIdx) {
         _stopAndClose(e);
         const titleObj = Storage.getTitles()[tIdx];
-        const titleEl = document.getElementById(`t_${titleObj.id}`);
+        const titleEl  = document.getElementById(`t_${titleObj.id}`);
         if (titleEl) titleEl.open = true;
 
         Storage.saveStateForUndo();
@@ -128,7 +128,7 @@ const Editor = (() => {
 
     function editCategory(e, tIdx, cIdx) {
         _stopAndClose(e);
-        const catId = Storage.getTitles()[tIdx].categories[cIdx].id;
+        const catId   = Storage.getTitles()[tIdx].categories[cIdx].id;
         const summaryEl = document.querySelector(`#c_${catId} > summary`);
         if (summaryEl) _startCatEdit(summaryEl, tIdx, cIdx, false);
     }
@@ -140,7 +140,7 @@ const Editor = (() => {
     function addSubtitle(e, tIdx, cIdx) {
         _stopAndClose(e);
         const catObj = Storage.getTitles()[tIdx].categories[cIdx];
-        const catEl = document.getElementById(`c_${catObj.id}`);
+        const catEl  = document.getElementById(`c_${catObj.id}`);
         if (catEl) catEl.open = true;
 
         Storage.saveStateForUndo();
@@ -159,7 +159,7 @@ const Editor = (() => {
 
     function editSubtitle(e, tIdx, cIdx, sIdx) {
         _stopAndClose(e);
-        const subId = Storage.getTitles()[tIdx].categories[cIdx].subtitles[sIdx].id;
+        const subId   = Storage.getTitles()[tIdx].categories[cIdx].subtitles[sIdx].id;
         const summaryEl = document.querySelector(`#s_${subId} > summary`);
         if (summaryEl) _startSubEdit(summaryEl, tIdx, cIdx, sIdx, false);
     }
@@ -171,7 +171,7 @@ const Editor = (() => {
     function addSnippet(e, tIdx, cIdx, sIdx) {
         _stopAndClose(e);
         const subObj = Storage.getTitles()[tIdx].categories[cIdx].subtitles[sIdx];
-        const subEl = document.getElementById(`s_${subObj.id}`);
+        const subEl  = document.getElementById(`s_${subObj.id}`);
         if (subEl) subEl.open = true;
 
         Storage.saveStateForUndo();
@@ -191,7 +191,9 @@ const Editor = (() => {
     function editSnippet(e, tIdx, cIdx, sIdx, snIdx) {
         _stopAndClose(e);
         const snipObj = Storage.getTitles()[tIdx].categories[cIdx].subtitles[sIdx].snippets[snIdx];
-        const card = document.querySelector(`.snippet-card[data-id="${snipObj.id}"]`);
+        // Initialize a draft buffer for this snippet so edits can be staged
+        try { if (typeof Drafts !== 'undefined' && Drafts.start) Drafts.start(snipObj.id, snipObj); } catch (e) { console.warn('[Editor] Drafts.start failed', e); }
+        const card    = document.querySelector(`.snippet-card[data-id="${snipObj.id}"]`);
         if (card) _startSnippetEdit(card, tIdx, cIdx, sIdx, snIdx, false);
     }
 
@@ -205,12 +207,12 @@ const Editor = (() => {
         let name = '';
 
         switch (type) {
-            case 'title': name = titles[tIdx].title; break;
-            case 'cat': name = titles[tIdx].categories[cIdx].title; break;
-            case 'sub': name = titles[tIdx].categories[cIdx].subtitles[sIdx].title; break;
-            case 'snip': name = titles[tIdx].categories[cIdx].subtitles[sIdx].snippets[snIdx].title; break;
+            case 'title':      name = titles[tIdx].title; break;
+            case 'cat':        name = titles[tIdx].categories[cIdx].title; break;
+            case 'sub':        name = titles[tIdx].categories[cIdx].subtitles[sIdx].title; break;
+            case 'snip':       name = titles[tIdx].categories[cIdx].subtitles[sIdx].snippets[snIdx].title; break;
             case 'collection': name = titles[tIdx].collections[cIdx].title; break;
-            case 'card': name = titles[tIdx].collections[cIdx].cards[sIdx].title; break;
+            case 'card':       name = titles[tIdx].collections[cIdx].cards[sIdx].title; break;
         }
 
         if (!confirm(`¿Eliminar permanentemente "${name || 'este elemento'}" y todo su contenido?`)) return;
@@ -246,16 +248,16 @@ const Editor = (() => {
             try {
                 const snip = titles[tIdx].categories[cIdx].subtitles[sIdx].snippets[snIdx];
                 if (snip && snip.id && typeof Drafts !== 'undefined' && Drafts.discard) Drafts.discard(snip.id);
-            } catch (e) { }
+            } catch (e) { /* ignore */ }
         }
 
         switch (type) {
-            case 'title': titles.splice(tIdx, 1); break;
-            case 'cat': titles[tIdx].categories.splice(cIdx, 1); break;
-            case 'sub': titles[tIdx].categories[cIdx].subtitles.splice(sIdx, 1); break;
-            case 'snip': titles[tIdx].categories[cIdx].subtitles[sIdx].snippets.splice(snIdx, 1); break;
+            case 'title':      titles.splice(tIdx, 1); break;
+            case 'cat':        titles[tIdx].categories.splice(cIdx, 1); break;
+            case 'sub':        titles[tIdx].categories[cIdx].subtitles.splice(sIdx, 1); break;
+            case 'snip':       titles[tIdx].categories[cIdx].subtitles[sIdx].snippets.splice(snIdx, 1); break;
             case 'collection': titles[tIdx].collections.splice(cIdx, 1); break;
-            case 'card': titles[tIdx].collections[cIdx].cards.splice(sIdx, 1); break;
+            case 'card':       titles[tIdx].collections[cIdx].cards.splice(sIdx, 1); break;
         }
 
         Storage.save(true);
@@ -285,6 +287,7 @@ const Editor = (() => {
         const val = el.textContent.trim();
         const orig = el.dataset.orig || '';
         if (val === orig) return;
+        // Persistir mediante storage wrapper
         Storage.editSnippetById(id, { blockTitle: val });
         App.showToast('Título de bloque guardado.', false);
     }
@@ -302,9 +305,9 @@ const Editor = (() => {
         textEl.style.display = 'none';
 
         const input = document.createElement('input');
-        input.type = 'text';
-        input.className = 'inline-input';
-        input.value = isNew ? '' : original;
+        input.type        = 'text';
+        input.className   = 'inline-input';
+        input.value       = isNew ? '' : original;
         input.placeholder = type === 'title' ? 'Ej: JavaScript, Anime, Videojuegos…' : 'Nombre…';
         textEl.parentNode.insertBefore(input, textEl);
         input.focus();
@@ -335,13 +338,10 @@ const Editor = (() => {
         };
 
         input.onkeydown = ev => {
-            if (ev.key === 'Enter') { ev.preventDefault(); input.onblur = null; save(); }
+            if (ev.key === 'Enter')  { ev.preventDefault(); input.onblur = null; save(); }
             if (ev.key === 'Escape') { input.onblur = null; cancel(); }
         };
-        input.onclick = ev => ev.stopPropagation();
-        input.onmousedown = ev => ev.stopPropagation();
-        // Retrasar el blur para permitir que clicks en otros botones se procesen antes de re-renderizar
-        input.onblur = () => setTimeout(() => { if (summaryEl.dataset.editing) save(); }, 150);
+        input.onblur = save;
     }
 
     // ══════════════════════════════════════════════════════════
@@ -353,18 +353,18 @@ const Editor = (() => {
         if (!textEl || summaryEl.dataset.editing) return;
         summaryEl.dataset.editing = '1';
 
-        const catObj = Storage.getTitles()[tIdx].categories[cIdx];
-        const leftDiv = summaryEl.querySelector('.summary-left');
+        const catObj   = Storage.getTitles()[tIdx].categories[cIdx];
+        const leftDiv  = summaryEl.querySelector('.summary-left');
         const origHTML = leftDiv.innerHTML;
 
         leftDiv.innerHTML = '';
 
         const inputName = document.createElement('input');
-        inputName.type = 'text';
-        inputName.className = 'inline-input-sm';
-        inputName.value = isNew ? '' : catObj.title;
+        inputName.type        = 'text';
+        inputName.className   = 'inline-input-sm';
+        inputName.value       = isNew ? '' : catObj.title;
         inputName.placeholder = 'Ej: Model, Backend, API…';
-        inputName.style.flex = '1';
+        inputName.style.flex  = '1';
 
         const sel = document.createElement('select');
         sel.className = 'inline-select';
@@ -375,8 +375,8 @@ const Editor = (() => {
             sel.appendChild(opt);
         });
 
-        const saveBtn = _mkBtn('check', 14, 'var(--success-text)', 'Guardar');
-        const cancelBtn = _mkBtn('x', 14, 'var(--text-muted)', 'Cancelar');
+        const saveBtn   = _mkBtn('check', 14, 'var(--success-text)', 'Guardar');
+        const cancelBtn = _mkBtn('x',     14, 'var(--text-muted)',   'Cancelar');
 
         leftDiv.appendChild(inputName);
         leftDiv.appendChild(sel);
@@ -407,14 +407,10 @@ const Editor = (() => {
             leftDiv.innerHTML = origHTML;
         };
 
-        saveBtn.onmousedown = e => { e.stopPropagation(); e.preventDefault(); save(); };
-        cancelBtn.onmousedown = e => { e.stopPropagation(); e.preventDefault(); _doCancel(); };
-        inputName.onclick = ev => ev.stopPropagation();
-        inputName.onmousedown = ev => ev.stopPropagation();
-        sel.onclick = ev => ev.stopPropagation();
-        sel.onmousedown = ev => ev.stopPropagation();
+        saveBtn.onclick   = e => { e.stopPropagation(); e.preventDefault(); save(); };
+        cancelBtn.onclick = e => { e.stopPropagation(); e.preventDefault(); _doCancel(); };
         inputName.onkeydown = ev => {
-            if (ev.key === 'Enter') { ev.preventDefault(); save(); }
+            if (ev.key === 'Enter')  { ev.preventDefault(); save(); }
             if (ev.key === 'Escape') _doCancel();
         };
     }
@@ -428,18 +424,18 @@ const Editor = (() => {
         if (!textEl || summaryEl.dataset.editing) return;
         summaryEl.dataset.editing = '1';
 
-        const subObj = Storage.getTitles()[tIdx].categories[cIdx].subtitles[sIdx];
-        const leftDiv = summaryEl.querySelector('.summary-left');
+        const subObj   = Storage.getTitles()[tIdx].categories[cIdx].subtitles[sIdx];
+        const leftDiv  = summaryEl.querySelector('.summary-left');
         const origHTML = leftDiv.innerHTML;
 
         leftDiv.innerHTML = '';
 
         const inputName = document.createElement('input');
-        inputName.type = 'text';
-        inputName.className = 'inline-input-sm';
-        inputName.value = isNew ? '' : subObj.title;
+        inputName.type        = 'text';
+        inputName.className   = 'inline-input-sm';
+        inputName.value       = isNew ? '' : subObj.title;
         inputName.placeholder = 'Nombre del subtítulo…';
-        inputName.style.flex = '1';
+        inputName.style.flex  = '1';
 
         const selType = document.createElement('select');
         selType.className = 'inline-select';
@@ -452,12 +448,12 @@ const Editor = (() => {
 
         const assocContainer = document.createElement('div');
         assocContainer.className = 'assoc-container';
-        assocContainer.style.display = subObj.isMain ? 'none' : 'flex';
+        assocContainer.style.display     = subObj.isMain ? 'none' : 'flex';
         assocContainer.style.flexDirection = 'column';
-        assocContainer.style.gap = '6px';
-        assocContainer.style.marginTop = '6px';
+        assocContainer.style.gap         = '6px';
+        assocContainer.style.marginTop   = '6px';
 
-        const catsWithMain = Storage.getAllCategoriesWithMainSubs(subObj.id);
+        const catsWithMain      = Storage.getAllCategoriesWithMainSubs(subObj.id);
         let currentAssociations = subObj.parentIds ? [...subObj.parentIds] : [];
 
         function renderAssociations() {
@@ -511,9 +507,9 @@ const Editor = (() => {
             });
 
             const btnAdd = document.createElement('button');
-            btnAdd.className = 'btn-icon';
+            btnAdd.className  = 'btn-icon';
             btnAdd.style.cssText = 'align-self:flex-start;font-size:0.8em;color:var(--primary)';
-            btnAdd.innerHTML = _icon('plus', 13) + ' Añadir Asociación';
+            btnAdd.innerHTML  = _icon('plus', 13) + ' Añadir Asociación';
             btnAdd.onclick = ev => {
                 ev.preventDefault(); ev.stopPropagation();
                 if (catsWithMain.length > 0) {
@@ -530,16 +526,16 @@ const Editor = (() => {
             assocContainer.style.display = selType.value === 'sec' ? 'flex' : 'none';
         };
 
-        const saveBtn = _mkBtn('check', 14, 'var(--success-text)', 'Guardar');
-        const cancelBtn = _mkBtn('x', 14, 'var(--text-muted)', 'Cancelar');
+        const saveBtn   = _mkBtn('check', 14, 'var(--success-text)', 'Guardar');
+        const cancelBtn = _mkBtn('x',     14, 'var(--text-muted)',   'Cancelar');
 
         const topRow = document.createElement('div');
         topRow.style.cssText = 'display:flex;align-items:center;gap:6px';
         topRow.appendChild(inputName); topRow.appendChild(selType);
-        topRow.appendChild(saveBtn); topRow.appendChild(cancelBtn);
+        topRow.appendChild(saveBtn);   topRow.appendChild(cancelBtn);
 
         leftDiv.style.flexDirection = 'column';
-        leftDiv.style.alignItems = 'stretch';
+        leftDiv.style.alignItems    = 'stretch';
         leftDiv.appendChild(topRow);
         leftDiv.appendChild(assocContainer);
         inputName.focus();
@@ -557,12 +553,12 @@ const Editor = (() => {
             const uniqueAssocs = [...new Set(currentAssociations)].filter(Boolean);
             Storage.saveStateForUndo();
             const s = Storage.getTitles()[tIdx].categories[cIdx].subtitles[sIdx];
-            s.title = val;
-            s.isMain = selType.value === 'main';
+            s.title    = val;
+            s.isMain   = selType.value === 'main';
             s.parentIds = selType.value === 'sec' ? uniqueAssocs : [];
             delete summaryEl.dataset.editing;
             leftDiv.style.flexDirection = '';
-            leftDiv.style.alignItems = '';
+            leftDiv.style.alignItems    = '';
             Storage.save(true);
         };
 
@@ -570,18 +566,14 @@ const Editor = (() => {
             delete summaryEl.dataset.editing;
             if (isNew) { rollback(); return; }
             leftDiv.style.flexDirection = '';
-            leftDiv.style.alignItems = '';
+            leftDiv.style.alignItems    = '';
             leftDiv.innerHTML = origHTML;
         };
 
-        saveBtn.onmousedown = e => { e.stopPropagation(); e.preventDefault(); save(); };
-        cancelBtn.onmousedown = e => { e.stopPropagation(); e.preventDefault(); _doCancel(); };
-        inputName.onclick = ev => ev.stopPropagation();
-        inputName.onmousedown = ev => ev.stopPropagation();
-        selType.onclick = ev => ev.stopPropagation();
-        selType.onmousedown = ev => ev.stopPropagation();
+        saveBtn.onclick   = e => { e.stopPropagation(); e.preventDefault(); save(); };
+        cancelBtn.onclick = e => { e.stopPropagation(); e.preventDefault(); _doCancel(); };
         inputName.onkeydown = ev => {
-            if (ev.key === 'Enter') { ev.preventDefault(); save(); }
+            if (ev.key === 'Enter')  { ev.preventDefault(); save(); }
             if (ev.key === 'Escape') _doCancel();
         };
     }
@@ -598,13 +590,14 @@ const Editor = (() => {
         const viewDiv = card.querySelector('.snippet-view');
         const editDiv = card.querySelector('.snippet-edit-zone');
         const snipObj = Storage.getTitles()[tIdx].categories[cIdx].subtitles[sIdx].snippets[snIdx];
-        // Initialize a draft buffer for this snippet so edits can be staged
-        try { if (typeof Drafts !== 'undefined' && Drafts.start) Drafts.start(snipObj.id, snipObj); } catch (e) { console.warn('[Editor] Drafts.start failed', e); }
+
         viewDiv.classList.add('hidden');
         editDiv.classList.remove('hidden');
 
+        // If a draft exists, prefill from it so in-progress edits survive re-open
         const d = (typeof Drafts !== 'undefined' && Drafts.get) ? Drafts.get(snipObj.id) : null;
         const currentCover = (d && d.coverImage !== undefined) ? d.coverImage : snipObj.coverImage;
+
         const coverUrl = (currentCover && typeof Attachments !== 'undefined' && Attachments.getDisplayUrl) ? Attachments.getDisplayUrl(currentCover) : null;
         const isStaged = !!(d && Object.prototype.hasOwnProperty.call(d, 'coverImage') && d.coverImage !== snipObj.coverImage);
 
@@ -624,17 +617,16 @@ const Editor = (() => {
                 </select>
                 <textarea id="ef_code" class="inline-textarea" placeholder="Escribe el código aquí…"></textarea>
                 <div class="snippet-image-editor">
-                    ${coverUrl ? `
+                    ${ coverUrl ? `
                         <div class="image-preview">
                             <img src="${coverUrl}" alt="thumbnail">
-                                ${isStaged ? `<span class="draft-badge">Pendiente</span>` : ''}
+                            ${ isStaged ? `<span class="draft-badge">Pendiente</span>` : '' }
                             <div class="img-actions">
                                 <button id="ef_change_image" class="btn">Cambiar imagen</button>
                                 <button id="ef_remove_image" class="btn btn-danger">Eliminar imagen</button>
                             </div>
                         </div>
-                    ` : `<button id="ef_select_image" class="btn">Seleccionar imagen</button>`}
-                </div>
+                    ` : `<button id="ef_select_image" class="btn">Seleccionar imagen</button>` }
                 </div>
                 <div class="snippet-edit-actions">
                     <button id="ef_save" class="btn-primary">${_icon('check', 14)} Guardar</button>
@@ -647,6 +639,7 @@ const Editor = (() => {
         const contentSel = editDiv.querySelector('#ef_contentType');
         codeTA.value = d && d.code !== undefined ? d.code : (snipObj.code || '');
         contentSel.value = d && d.contentType ? d.contentType : (snipObj.contentType || 'code');
+        // title/desc fields
         const titleEl = editDiv.querySelector('#ef_title');
         const descEl = editDiv.querySelector('#ef_desc');
         if (d) { if (d.title !== undefined) titleEl.value = d.title; if (d.description !== undefined) descEl.value = d.description; }
@@ -667,8 +660,8 @@ const Editor = (() => {
 
         const save = () => {
             const title = editDiv.querySelector('#ef_title').value.trim();
-            const desc = editDiv.querySelector('#ef_desc').value.trim();
-            const code = codeTA.value;
+            const desc  = editDiv.querySelector('#ef_desc').value.trim();
+            const code  = codeTA.value;
             const contentType = contentSel.value || 'code';
             if (!title) {
                 editDiv.querySelector('#ef_title').style.borderColor = 'var(--danger)';
@@ -678,8 +671,11 @@ const Editor = (() => {
                 codeTA.style.borderColor = 'var(--danger)';
                 return;
             }
+            // Commit via Storage API, but keep a drafts layer until successful
             Storage.saveStateForUndo();
+            // Update draft first
             try { if (typeof Drafts !== 'undefined' && Drafts.update) Drafts.update(snipObj.id, { title, description: desc, code, contentType }); } catch (e) { console.warn('[Editor] Drafts.update failed', e); }
+            // Commit draft -> storage
             try { if (typeof Drafts !== 'undefined' && Drafts.commit) { Drafts.commit(snipObj.id); } else { const s = Storage.getTitles()[tIdx].categories[cIdx].subtitles[sIdx].snippets[snIdx]; s.title = title; s.description = desc; s.code = code; s.contentType = contentType; Storage.save(true); } } catch (e) { console.warn('[Editor] commit failed', e); }
             delete card.dataset.editing;
         };
@@ -694,7 +690,7 @@ const Editor = (() => {
             try { if (typeof Drafts !== 'undefined' && Drafts.discard) Drafts.discard(snipObj.id); } catch (e) { console.warn('[Editor] Drafts.discard failed', e); }
         };
 
-        editDiv.querySelector('#ef_save').onclick = save;
+        editDiv.querySelector('#ef_save').onclick   = save;
         editDiv.querySelector('#ef_cancel').onclick = cancel;
         codeTA.addEventListener('keydown', ev => {
             if ((ev.ctrlKey || ev.metaKey) && ev.key === 'Enter') { ev.preventDefault(); save(); }
@@ -706,45 +702,10 @@ const Editor = (() => {
         const removeBtn = editDiv.querySelector('#ef_remove_image');
 
         const refreshImageUI = (relativePath, displayUrl) => {
-            // Stage into Drafts rather than persisting immediately
+            // Update draft only so the image is staged until commit
             try { if (typeof Drafts !== 'undefined' && Drafts.update) Drafts.update(snipObj.id, { coverImage: relativePath }); } catch (e) { console.warn('[Editor] Drafts.update failed', e); }
-            
-            // Inject preview manually to avoid losing focus / full re-render
-            const imgEditor = editDiv.querySelector('.snippet-image-editor');
-            if (imgEditor && displayUrl) {
-                imgEditor.innerHTML = `
-                    <div class="image-preview">
-                        <img src="${displayUrl}" alt="thumbnail">
-                        <span class="draft-badge">Pendiente</span>
-                        <div class="img-actions">
-                            <button id="ef_change_image" class="btn">Cambiar imagen</button>
-                            <button id="ef_remove_image" class="btn btn-danger">Eliminar imagen</button>
-                        </div>
-                    </div>
-                `;
-                
-                // Re-bind listeners for the new buttons
-                const cBtn = imgEditor.querySelector('#ef_change_image');
-                const rBtn = imgEditor.querySelector('#ef_remove_image');
-                if (cBtn) {
-                    cBtn.onclick = () => {
-                        if (typeof Attachments === 'undefined' || !Attachments.selectAndCopy) return App.showToast('Funcionalidad de attachments no disponible', false);
-                        Attachments.selectAndCopy(snipObj.id, (res) => {
-                            if (res && res.relativePath) refreshImageUI(res.relativePath, res.displayUrl);
-                        }, (err) => { App.showToast('Error al copiar imagen: ' + err, false); });
-                    };
-                }
-                if (rBtn) {
-                    rBtn.onclick = () => {
-                        try { if (typeof Drafts !== 'undefined' && Drafts.update) Drafts.update(snipObj.id, { coverImage: null }); } catch (e) { console.warn('[Editor] Drafts.update failed', e); }
-                        imgEditor.innerHTML = `<button id="ef_select_image" class="btn">Seleccionar imagen</button>`;
-                        const sBtn = imgEditor.querySelector('#ef_select_image');
-                        if (sBtn) {
-                            sBtn.onclick = selectBtn.onclick; // Use the original listener
-                        }
-                    };
-                }
-            }
+            // re-open editor to reflect changes (preview from draft)
+            setTimeout(() => { _startSnippetEdit(card, tIdx, cIdx, sIdx, snIdx, false); }, 40);
         };
 
         if (selectBtn) {
@@ -771,7 +732,7 @@ const Editor = (() => {
 
         if (removeBtn) {
             removeBtn.onclick = () => {
-                // Stage removal in draft
+                // Stage removal in draft; actual cleanup will occur after commit via Storage.cleanup
                 try { if (typeof Drafts !== 'undefined' && Drafts.update) Drafts.update(snipObj.id, { coverImage: null }); } catch (e) { console.warn('[Editor] Drafts.update failed', e); }
                 setTimeout(() => { _startSnippetEdit(card, tIdx, cIdx, sIdx, snIdx, false); }, 40);
             };
@@ -782,7 +743,7 @@ const Editor = (() => {
     function _mkBtn(iconName, size, color, title) {
         const btn = document.createElement('button');
         btn.className = 'btn-icon';
-        btn.title = title;
+        btn.title     = title;
         btn.innerHTML = _icon(iconName, size);
         btn.style.color = color;
         return btn;
