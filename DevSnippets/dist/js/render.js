@@ -32,6 +32,18 @@ const Render = (() => {
         el.className = className;
         if (openSet.has(id)) el.open = true;
         el.addEventListener('toggle', saveOpenStates, { passive: true });
+        // ── Guardia de toggle (Paso 1 — Auditoría details/summary) ──────────
+        // En fase de captura, antes de que el browser active el toggle nativo,
+        // cancelamos el evento si el click proviene de un elemento interactivo
+        // (button, input, select, a, contenteditable) que está dentro del <summary>.
+        // Esto elimina: toggles inesperados, blur prematuros y clicks cancelados.
+        el.addEventListener('click', function(e) {
+            const summary = el.querySelector(':scope > summary');
+            if (!summary || !summary.contains(e.target)) return;
+            if (e.target.closest('button, input, select, a, [contenteditable="true"]')) {
+                e.preventDefault();
+            }
+        }, true); // capturing = true → se ejecuta antes del toggle nativo
         return el;
     }
 

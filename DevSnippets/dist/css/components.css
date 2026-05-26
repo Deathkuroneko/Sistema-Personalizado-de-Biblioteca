@@ -340,6 +340,7 @@ details[open] > summary .arrow-icon { transform: rotate(90deg); color: var(--pri
     margin-bottom: 20px;
     box-shadow: var(--shadow-sm);
     transition: box-shadow 0.2s;
+    position: relative; /* contexto para .summary-actions */
 }
 .title-card:hover { box-shadow: var(--shadow); }
 /* Ghost state para drag de títulos */
@@ -370,6 +371,7 @@ details[open] > .title-summary { border-radius: 10px 10px 0 0; }
     border-radius: 0 8px 8px 0;
     margin-bottom: 14px;
     transition: box-shadow 0.2s;
+    position: relative; /* contexto para .summary-actions */
 }
 .cat-card:hover { box-shadow: var(--shadow-sm); }
 
@@ -404,6 +406,7 @@ details[open] > .cat-summary { border-radius: 0 8px 0 0; }
     border-radius: 8px;
     margin-bottom: 10px;
     background: var(--surface);
+    position: relative; /* contexto para .summary-actions */
 }
 
 .sub-summary {
@@ -414,6 +417,24 @@ details[open] > .cat-summary { border-radius: 0 8px 0 0; }
 }
 details[open] > .sub-summary { border-radius: 8px 8px 0 0; }
 .sub-summary:hover { background: var(--surface-hover); }
+
+/* ── Paso 2: .summary-actions — dropdown movido fuera del <summary> ─────
+   Posicionado absolutamente en la esquina superior-derecha del <details>.
+   El padding-top por nivel alinea el botón con la primera línea de contenido.
+   El <details> padre tiene position:relative como contexto (ver arriba). */
+.summary-actions {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 3;
+    display: flex;
+    align-items: flex-start;
+    pointer-events: all;
+    padding-right: 4px;
+}
+.title-card > .summary-actions { padding-top: 14px; } /* alineado con padding 16px del title-summary */
+.cat-card   > .summary-actions { padding-top: 8px;  } /* alineado con padding 10px del cat-summary */
+.sub-card   > .summary-actions { padding-top: 7px;  } /* alineado con padding 9px del sub-summary */
 
 /* Relaciones de Subtítulos */
 .sub-title-col {

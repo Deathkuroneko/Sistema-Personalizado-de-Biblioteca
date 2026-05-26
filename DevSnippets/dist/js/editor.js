@@ -297,6 +297,8 @@ const Editor = (() => {
         const textEl = summaryEl.querySelector('.summary-text');
         if (!textEl || summaryEl.dataset.editing) return;
         summaryEl.dataset.editing = '1';
+        // Paso 3 — Deshabilitar toggle nativo mientras hay input activo en el summary
+        summaryEl.onclick = e => e.preventDefault();
 
         const original = textEl.innerText.trim();
         textEl.style.display = 'none';
@@ -329,6 +331,7 @@ const Editor = (() => {
 
         const cancel = () => {
             delete summaryEl.dataset.editing;
+            summaryEl.onclick = null; // Restaurar toggle del <details>
             input.remove();
             textEl.style.display = '';
             if (isNew) rollback();
@@ -352,6 +355,8 @@ const Editor = (() => {
         const textEl = summaryEl.querySelector('.summary-text');
         if (!textEl || summaryEl.dataset.editing) return;
         summaryEl.dataset.editing = '1';
+        // Paso 3 — Deshabilitar toggle nativo mientras hay inputs activos en el summary
+        summaryEl.onclick = e => e.preventDefault();
 
         const catObj = Storage.getTitles()[tIdx].categories[cIdx];
         const leftDiv = summaryEl.querySelector('.summary-left');
@@ -403,6 +408,7 @@ const Editor = (() => {
 
         const _doCancel = () => {
             delete summaryEl.dataset.editing;
+            summaryEl.onclick = null; // Restaurar toggle del <details>
             if (isNew) { rollback(); return; }
             leftDiv.innerHTML = origHTML;
         };
@@ -427,6 +433,8 @@ const Editor = (() => {
         const textEl = summaryEl.querySelector('.summary-text');
         if (!textEl || summaryEl.dataset.editing) return;
         summaryEl.dataset.editing = '1';
+        // Paso 3 — Deshabilitar toggle nativo mientras hay inputs activos en el summary
+        summaryEl.onclick = e => e.preventDefault();
 
         const subObj = Storage.getTitles()[tIdx].categories[cIdx].subtitles[sIdx];
         const leftDiv = summaryEl.querySelector('.summary-left');
@@ -568,6 +576,7 @@ const Editor = (() => {
 
         const _doCancel = () => {
             delete summaryEl.dataset.editing;
+            summaryEl.onclick = null; // Restaurar toggle del <details>
             if (isNew) { rollback(); return; }
             leftDiv.style.flexDirection = '';
             leftDiv.style.alignItems = '';
@@ -679,8 +688,22 @@ const Editor = (() => {
                 return;
             }
             Storage.saveStateForUndo();
-            try { if (typeof Drafts !== 'undefined' && Drafts.update) Drafts.update(snipObj.id, { title, description: desc, code, contentType }); } catch (e) { console.warn('[Editor] Drafts.update failed', e); }
-            try { if (typeof Drafts !== 'undefined' && Drafts.commit) { Drafts.commit(snipObj.id); } else { const s = Storage.getTitles()[tIdx].categories[cIdx].subtitles[sIdx].snippets[snIdx]; s.title = title; s.description = desc; s.code = code; s.contentType = contentType; Storage.save(true); } } catch (e) { console.warn('[Editor] commit failed', e); }
+            const payload = { title, description: desc, code, contentType };
+            const d = (typeof Drafts !== 'undefined' && Drafts.get) ? Drafts.get(snipObj.id) : null;
+            console.log('[SAVE DRAFT]', d);
+            if (d) {
+                if (d.coverImage !== undefined) payload.coverImage = d.coverImage;
+                if (d.blockTitle !== undefined) payload.blockTitle = d.blockTitle;
+                if (d.fav !== undefined) payload.fav = d.fav;
+            }
+            if (typeof Storage !== 'undefined' && Storage.editSnippetById) {
+                Storage.editSnippetById(snipObj.id, payload);
+            } else {
+                const s = Storage.getTitles()[tIdx].categories[cIdx].subtitles[sIdx].snippets[snIdx];
+                Object.assign(s, payload);
+                Storage.save(true);
+            }
+            try { if (typeof Drafts !== 'undefined' && Drafts.discard) Drafts.discard(snipObj.id); } catch(e){}
             delete card.dataset.editing;
         };
 
@@ -708,6 +731,8 @@ const Editor = (() => {
         const refreshImageUI = (relativePath, displayUrl) => {
             // Stage into Drafts rather than persisting immediately
             try { if (typeof Drafts !== 'undefined' && Drafts.update) Drafts.update(snipObj.id, { coverImage: relativePath }); } catch (e) { console.warn('[Editor] Drafts.update failed', e); }
+            console.log('[Drafts.update]', snipObj.id, relativePath);
+            console.log('[Drafts.state]', typeof Drafts !== 'undefined' && Drafts.get ? Drafts.get(snipObj.id) : null);
             
             // Inject preview manually to avoid losing focus / full re-render
             const imgEditor = editDiv.querySelector('.snippet-image-editor');

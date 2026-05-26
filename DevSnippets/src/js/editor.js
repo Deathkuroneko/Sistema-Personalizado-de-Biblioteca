@@ -671,12 +671,24 @@ const Editor = (() => {
                 codeTA.style.borderColor = 'var(--danger)';
                 return;
             }
-            // Commit via Storage API, but keep a drafts layer until successful
+            // Commit via Storage API explicitly bypassing Drafts.commit to avoid dropping coverImage
             Storage.saveStateForUndo();
-            // Update draft first
-            try { if (typeof Drafts !== 'undefined' && Drafts.update) Drafts.update(snipObj.id, { title, description: desc, code, contentType }); } catch (e) { console.warn('[Editor] Drafts.update failed', e); }
-            // Commit draft -> storage
-            try { if (typeof Drafts !== 'undefined' && Drafts.commit) { Drafts.commit(snipObj.id); } else { const s = Storage.getTitles()[tIdx].categories[cIdx].subtitles[sIdx].snippets[snIdx]; s.title = title; s.description = desc; s.code = code; s.contentType = contentType; Storage.save(true); } } catch (e) { console.warn('[Editor] commit failed', e); }
+            const payload = { title, description: desc, code, contentType };
+            const d = (typeof Drafts !== 'undefined' && Drafts.get) ? Drafts.get(snipObj.id) : null;
+            console.log('[SAVE DRAFT]', d);
+            if (d) {
+                if (d.coverImage !== undefined) payload.coverImage = d.coverImage;
+                if (d.blockTitle !== undefined) payload.blockTitle = d.blockTitle;
+                if (d.fav !== undefined) payload.fav = d.fav;
+            }
+            if (typeof Storage !== 'undefined' && Storage.editSnippetById) {
+                Storage.editSnippetById(snipObj.id, payload);
+            } else {
+                const s = Storage.getTitles()[tIdx].categories[cIdx].subtitles[sIdx].snippets[snIdx];
+                Object.assign(s, payload);
+                Storage.save(true);
+            }
+            try { if (typeof Drafts !== 'undefined' && Drafts.discard) Drafts.discard(snipObj.id); } catch(e){}
             delete card.dataset.editing;
         };
 
@@ -704,6 +716,8 @@ const Editor = (() => {
         const refreshImageUI = (relativePath, displayUrl) => {
             // Update draft only so the image is staged until commit
             try { if (typeof Drafts !== 'undefined' && Drafts.update) Drafts.update(snipObj.id, { coverImage: relativePath }); } catch (e) { console.warn('[Editor] Drafts.update failed', e); }
+            console.log('[Drafts.update]', snipObj.id, relativePath);
+            console.log('[Drafts.state]', typeof Drafts !== 'undefined' && Drafts.get ? Drafts.get(snipObj.id) : null);
             // re-open editor to reflect changes (preview from draft)
             setTimeout(() => { _startSnippetEdit(card, tIdx, cIdx, sIdx, snIdx, false); }, 40);
         };
