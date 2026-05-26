@@ -690,7 +690,6 @@ const Editor = (() => {
             Storage.saveStateForUndo();
             const payload = { title, description: desc, code, contentType };
             const d = (typeof Drafts !== 'undefined' && Drafts.get) ? Drafts.get(snipObj.id) : null;
-            console.log('[SAVE DRAFT]', d);
             if (d) {
                 if (d.coverImage !== undefined) payload.coverImage = d.coverImage;
                 if (d.blockTitle !== undefined) payload.blockTitle = d.blockTitle;
@@ -731,8 +730,6 @@ const Editor = (() => {
         const refreshImageUI = (relativePath, displayUrl) => {
             // Stage into Drafts rather than persisting immediately
             try { if (typeof Drafts !== 'undefined' && Drafts.update) Drafts.update(snipObj.id, { coverImage: relativePath }); } catch (e) { console.warn('[Editor] Drafts.update failed', e); }
-            console.log('[Drafts.update]', snipObj.id, relativePath);
-            console.log('[Drafts.state]', typeof Drafts !== 'undefined' && Drafts.get ? Drafts.get(snipObj.id) : null);
             
             // Inject preview manually to avoid losing focus / full re-render
             const imgEditor = editDiv.querySelector('.snippet-image-editor');

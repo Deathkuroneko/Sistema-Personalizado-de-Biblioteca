@@ -671,11 +671,9 @@ const Editor = (() => {
                 codeTA.style.borderColor = 'var(--danger)';
                 return;
             }
-            // Commit via Storage API explicitly bypassing Drafts.commit to avoid dropping coverImage
             Storage.saveStateForUndo();
             const payload = { title, description: desc, code, contentType };
             const d = (typeof Drafts !== 'undefined' && Drafts.get) ? Drafts.get(snipObj.id) : null;
-            console.log('[SAVE DRAFT]', d);
             if (d) {
                 if (d.coverImage !== undefined) payload.coverImage = d.coverImage;
                 if (d.blockTitle !== undefined) payload.blockTitle = d.blockTitle;
@@ -716,8 +714,6 @@ const Editor = (() => {
         const refreshImageUI = (relativePath, displayUrl) => {
             // Update draft only so the image is staged until commit
             try { if (typeof Drafts !== 'undefined' && Drafts.update) Drafts.update(snipObj.id, { coverImage: relativePath }); } catch (e) { console.warn('[Editor] Drafts.update failed', e); }
-            console.log('[Drafts.update]', snipObj.id, relativePath);
-            console.log('[Drafts.state]', typeof Drafts !== 'undefined' && Drafts.get ? Drafts.get(snipObj.id) : null);
             // re-open editor to reflect changes (preview from draft)
             setTimeout(() => { _startSnippetEdit(card, tIdx, cIdx, sIdx, snIdx, false); }, 40);
         };
