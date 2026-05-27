@@ -7,6 +7,8 @@ const App = (() => {
     const THEME_KEY = 'devSnippets_theme';
     let _activeDropdown = null;
     let _toastTimeout   = null;
+    let _typeFilter = 'all';
+    let _searchWrapped = false;
 
     async function init() {
         _applyStoredTheme();
@@ -16,8 +18,10 @@ const App = (() => {
         if (typeof Editor !== 'undefined') Editor.initModalEvents();
         if (typeof EditorMedia !== 'undefined') EditorMedia.init();
         Sidebar.init();
+        _wrapSearchFilter();
         Render.render();
         _bindGlobalEvents();
+        _syncTypeFilterButtons();
     }
 
     function _applyStoredTheme() {
@@ -65,6 +69,36 @@ const App = (() => {
             _activeDropdown.classList.remove('show');
             _activeDropdown = null;
         }
+    }
+
+    function _wrapSearchFilter() {
+        if (_searchWrapped || typeof Search === 'undefined' || !Search.filter) return;
+        const originalFilter = Search.filter.bind(Search);
+        Search.filter = () => {
+            originalFilter();
+            applyTypeFilter();
+        };
+        _searchWrapped = true;
+    }
+
+    function _syncTypeFilterButtons() {
+        document.querySelectorAll('.type-filter-btn[data-filter-type]').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.filterType === _typeFilter);
+        });
+    }
+
+    function setTypeFilter(type = 'all') {
+        _typeFilter = ['all', 'media', 'technical'].includes(type) ? type : 'all';
+        _syncTypeFilterButtons();
+        if (typeof Search !== 'undefined' && Search.filter) Search.filter();
+        else applyTypeFilter();
+    }
+
+    function applyTypeFilter() {
+        document.querySelectorAll('.title-card[data-type]').forEach(card => {
+            const shouldHide = _typeFilter !== 'all' && card.dataset.type !== _typeFilter;
+            card.classList.toggle('type-hidden', shouldHide);
+        });
     }
 
     function showToast(msg, showUndo = false) {
@@ -188,6 +222,7 @@ const App = (() => {
         toggleDropdown, closeActiveDropdown,
         showToast, undoAction,
         copyCode,
+        setTypeFilter, applyTypeFilter,
         saveManual, exportJSON,
         expandParents, navigateToSubtitle,
         toggleExpand

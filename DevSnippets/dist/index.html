@@ -103,6 +103,11 @@
                     spellcheck="false"
                 >
             </div>
+            <div class="type-filter" aria-label="Filtrar por tipo">
+                <button class="type-filter-btn active" type="button" data-filter-type="all" onclick="App.setTypeFilter('all')">Todos</button>
+                <button class="type-filter-btn" type="button" data-filter-type="media" onclick="App.setTypeFilter('media')">Media</button>
+                <button class="type-filter-btn" type="button" data-filter-type="technical" onclick="App.setTypeFilter('technical')">Tech</button>
+            </div>
         </header>
 
         <!-- ── Área de contenido scrollable ── -->

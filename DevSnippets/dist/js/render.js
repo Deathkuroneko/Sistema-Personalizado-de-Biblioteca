@@ -176,17 +176,32 @@ const Render = (() => {
         const bar = document.getElementById('stats-bar');
         if (!bar) return;
 
-        const parts = [`<span><b>${stats.titles}</b> Títulos</span>`];
-        if (stats.cats  > 0 || stats.snips > 0) {
-            parts.push(`<span><b>${stats.cats}</b> Categorías</span>`);
-            parts.push(`<span><b>${stats.subs}</b> Subtítulos</span>`);
-            parts.push(`<span><b>${stats.snips}</b> Snippets</span>`);
+        const techTitles = document.querySelectorAll('.title-card[data-type="technical"]').length;
+        const mediaTitles = document.querySelectorAll('.title-card[data-type="media"]').length;
+        const metric = (value, label) => `<span class="metric-pill"><b>${value}</b><span>${label}</span></span>`;
+        const group = (type, label, metrics) => `
+            <span class="metric-group metric-group--${type}">
+                <span class="metric-group-label">${label}</span>
+                ${metrics.join('')}
+            </span>`;
+
+        const parts = [];
+        if (techTitles > 0 || stats.cats > 0 || stats.snips > 0) {
+            parts.push(group('tech', 'TECH', [
+                metric(techTitles, 'Técnicos'),
+                metric(stats.cats, 'Categorías'),
+                metric(stats.subs, 'Subtítulos'),
+                metric(stats.snips, 'Snippets'),
+            ]));
         }
-        if (stats.collections > 0 || stats.cards > 0) {
-            parts.push(`<span><b>${stats.collections}</b> Colecciones</span>`);
-            parts.push(`<span><b>${stats.cards}</b> Fichas</span>`);
+        if (mediaTitles > 0 || stats.collections > 0 || stats.cards > 0) {
+            parts.push(group('media', 'MEDIA', [
+                metric(mediaTitles, 'Media'),
+                metric(stats.collections, 'Colecciones'),
+                metric(stats.cards, 'Fichas'),
+            ]));
         }
-        bar.innerHTML = parts.join('');
+        bar.innerHTML = parts.length ? parts.join('<span class="metric-separator" aria-hidden="true"></span>') : metric(stats.titles, 'Títulos');
     }
 
     return { render, saveOpenStates };

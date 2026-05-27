@@ -128,14 +128,67 @@ body {
 
 /* Stats bar */
 #stats-bar {
-    font-size: 0.82em;
-    color: var(--text-subtle);
     display: flex;
-    gap: 14px;
+    align-items: center;
+    gap: 10px;
     flex-wrap: wrap;
 }
 
-#stats-bar b { color: var(--text-muted); font-weight: 600; }
+.metric-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.metric-group-label {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--text-subtle);
+    opacity: 0.82;
+}
+
+.metric-separator {
+    width: 1px;
+    height: 18px;
+    background: var(--border);
+    opacity: 0.65;
+}
+
+.metric-pill {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-subtle);
+    font-size: 12px;
+    line-height: 1.2;
+}
+
+.metric-pill b {
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 750;
+}
+
+[data-theme="light"] .metric-pill {
+    background: rgba(15, 23, 42, 0.035);
+    border-color: rgba(15, 23, 42, 0.08);
+}
+
+.metric-group--tech .metric-pill {
+    background: rgba(34, 211, 238, 0.04);
+    border-color: rgba(167, 139, 250, 0.10);
+}
+
+.metric-group--media .metric-pill {
+    background: rgba(96, 165, 250, 0.04);
+    border-color: rgba(96, 165, 250, 0.10);
+}
 
 /* ── Área de Contenido Scrollable ── */
 #app-scroll {

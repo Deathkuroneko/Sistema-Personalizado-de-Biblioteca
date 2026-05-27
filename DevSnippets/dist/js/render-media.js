@@ -81,7 +81,7 @@ const RenderMedia = (() => {
                         ${_icon('film', 16)}
                         <span class="summary-text title-name">${_escape(titleObj.title)}</span>
                         <span class="badge">${totalCards}</span>
-                        <span class="media-type-label">Media</span>
+                        <span class="type-badge type-badge--media">MEDIA</span>
                     </div>
                     ${_menuBtn(`tm_${titleObj.id}`, [
                         { icon: 'folder-plus', label: 'Nueva Colección', fn: `EditorMedia.addCollection(event,${tIdx})` },

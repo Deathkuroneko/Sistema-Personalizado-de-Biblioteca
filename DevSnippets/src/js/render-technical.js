@@ -121,6 +121,7 @@ const RenderTechnical = (() => {
                         ${_icon('code-2', 16)}
                         <span class="summary-text title-name">${_escape(titleObj.title)}</span>
                         <span class="badge">${titleSnipCount}</span>
+                        <span class="type-badge type-badge--tech">TECH</span>
                     </div>
                     ${_menuBtn(`tm_${titleObj.id}`, [
                         { icon: 'folder-plus', label: 'Añadir Categoría', fn: `Editor.addCategory(event,${tIdx})` },
