@@ -650,8 +650,13 @@ details[open] > .sub-summary { border-radius: 8px 8px 0 0; }
     border-radius: 8px;
     overflow: hidden;
     border: 1px solid var(--border);
+    margin-bottom: 10px;
     /* En modo claro la sombra sutil ayuda a delimitar el bloque oscuro */
     box-shadow: inset 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.code-block-body {
+    position: relative;
 }
 
 .code-block-wrapper pre {
@@ -718,6 +723,7 @@ details[open] > .sub-summary { border-radius: 8px 8px 0 0; }
     border: 1px solid var(--border);
     background: var(--surface);
     padding: 12px 12px 12px 12px;
+    margin-bottom: 10px;
 }
 .text-block {
     white-space: pre-wrap;    /* preserva saltos de línea pero permite wrap */
@@ -770,6 +776,10 @@ details[open] > .sub-summary { border-radius: 8px 8px 0 0; }
 .snippet-card:focus-within .copy-btn {
     display: inline-flex !important;
 }
+.block-header .copy-btn,
+.block-header .block-collapse-btn {
+    display: inline-flex !important;
+}
 
 /* Posicionar acciones (Copiar / Expandir) flotando arriba a la derecha del bloque */
 .code-block-wrapper,
@@ -796,18 +806,15 @@ details[open] > .sub-summary { border-radius: 8px 8px 0 0; }
     white-space: nowrap;
 }
 .block-header .block-title { padding-left: 6px; }
-.block-header .block-title[contenteditable="true"]:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(0,0,0,0.06);
-    text-overflow: clip;
-    overflow: visible;
-    white-space: normal;
-}
 /* Dejar un pequeño espacio entre header y contenido */
 .code-block-wrapper > .line-nums,
 .code-block-wrapper > pre,
 .text-block-wrapper > .text-block {
     padding-top: 8px;
+}
+.code-block-wrapper.block-collapsed-local .code-block-body,
+.text-block-wrapper.block-collapsed-local .text-block {
+    display: none;
 }
 /* Asegurar que los botones tengan el mismo aspecto que .copy-btn */
 

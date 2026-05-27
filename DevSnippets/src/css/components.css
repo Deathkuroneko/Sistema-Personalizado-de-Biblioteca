@@ -22,3 +22,22 @@
 .snippet-card:focus-within .copy-btn {
     display: inline-flex !important;
 }
+
+.code-block-wrapper,
+.text-block-wrapper {
+    margin-bottom: 10px;
+}
+
+.code-block-body {
+    position: relative;
+}
+
+.block-header .copy-btn,
+.block-header .block-collapse-btn {
+    display: inline-flex !important;
+}
+
+.code-block-wrapper.block-collapsed-local .code-block-body,
+.text-block-wrapper.block-collapsed-local .text-block {
+    display: none;
+}

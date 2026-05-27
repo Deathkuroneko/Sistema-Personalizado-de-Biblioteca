@@ -50,6 +50,10 @@ const RenderTechnical = (() => {
         return `<button class="copy-btn" title="Copiar" onclick='App.copyCode(this, ${copyArg})'>${_icon('copy',14)}</button>`;
     }
 
+    function _collapseButton() {
+        return `<button class="copy-btn block-collapse-btn" title="Contraer/Expandir" onclick="(function(btn){ const wrapper = btn.closest('.code-block-wrapper, .text-block-wrapper'); if (!wrapper) return; wrapper.classList.toggle('block-collapsed-local'); btn.textContent = wrapper.classList.contains('block-collapsed-local') ? '+' : '-'; })(this)">-</button>`;
+    }
+
     function _renderSnippetBlock(block) {
         const fallbackTitle = block.type === 'code' ? 'Código' : 'Texto';
         const blockTitle = _escape(block.blockTitle || fallbackTitle);
@@ -59,17 +63,19 @@ const RenderTechnical = (() => {
             return `<div class="code-block-wrapper">
                     <div class="block-header">
                         <div class="block-title">${blockTitle}</div>
-                        <div class="block-actions">${_copyButton(block.content || '')}</div>
+                        <div class="block-actions">${_copyButton(block.content || '')}${_collapseButton()}</div>
                     </div>
-                    <div class="line-nums">${(block.content || '').split('\n').map((_, i) => i + 1).join('\n')}</div>
-                    <pre><code>${escapedContent}</code></pre>
+                    <div class="code-block-body">
+                        <div class="line-nums">${(block.content || '').split('\n').map((_, i) => i + 1).join('\n')}</div>
+                        <pre><code>${escapedContent}</code></pre>
+                    </div>
                </div>`;
         }
 
         return `<div class="text-block-wrapper">
                     <div class="block-header">
                         <div class="block-title">${blockTitle}</div>
-                        <div class="block-actions">${_copyButton(block.content || '')}</div>
+                        <div class="block-actions">${_copyButton(block.content || '')}${_collapseButton()}</div>
                     </div>
                     <div class="text-block">${escapedContent.replace(/\n/g, '<br>')}</div>
                </div>`;
