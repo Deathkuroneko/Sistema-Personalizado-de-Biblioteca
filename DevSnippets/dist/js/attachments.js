@@ -3,7 +3,7 @@
  * DevSnippets | Sistema Multi-Estructura
  *
  * En Tauri:
- *   - Copia el archivo seleccionado a Documents/DevSnippets/attachments/
+ *   - Copia el archivo seleccionado a Documents/DevSnippets/attachments/{media|technical}/
  *   - Usa convertFileSrc() para generar una URL segura para <img>
  *   - Requiere "core:allow-asset" en capabilities/default.json
  *
@@ -51,13 +51,24 @@ const Attachments = (() => {
         return null;
     }
 
+    function _normalizeAttachmentType(type) {
+        return type === 'media' ? 'media' : 'technical';
+    }
+
     /**
      * Abre el selector de archivo de imagen y procesa la selección.
      * @param {string} cardId - ID de la card (para nombrar el archivo)
+     * @param {string} type - "media" o "technical"
      * @param {Function} onSuccess - cb({ relativePath, displayUrl })
      * @param {Function} onError   - cb(errorMessage)
      */
-    function selectAndCopy(cardId, onSuccess, onError) {
+    function selectAndCopy(cardId, type, onSuccess, onError) {
+        if (typeof type === 'function') {
+            onError = onSuccess;
+            onSuccess = type;
+            type = 'technical';
+        }
+
         const input = document.createElement('input');
         input.type   = 'file';
         input.accept = 'image/*';
@@ -71,7 +82,7 @@ const Attachments = (() => {
 
             try {
                 if (_isTauri()) {
-                    await _copyToAttachments(file, cardId, onSuccess, onError);
+                    await _copyToAttachments(file, cardId, type, onSuccess, onError);
                 } else {
                     _toBase64(file, onSuccess, onError);
                 }
@@ -84,23 +95,27 @@ const Attachments = (() => {
     }
 
     /**
-     * Copia el archivo a Documents/DevSnippets/attachments/
+     * Copia el archivo a Documents/DevSnippets/attachments/{media|technical}/
      * usando el plugin tauri-plugin-fs.
      */
-    async function _copyToAttachments(file, cardId, onSuccess, onError) {
+    async function _copyToAttachments(file, cardId, type, onSuccess, onError) {
         try {
-            const { copyFile, BaseDirectory } = window.__TAURI__.fs;
+            const { BaseDirectory } = window.__TAURI__.fs;
+            const attachmentType = _normalizeAttachmentType(type);
 
             // Nombre único: timestamp + extensión
             const ext      = file.name.split('.').pop().toLowerCase();
             const uniqueId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now();
             const safeName = `${cardId}_${uniqueId}.${ext}`;
-            const relPath  = `attachments/${safeName}`;
+            const relPath  = `attachments/${attachmentType}/${safeName}`;
             const destPath = `DevSnippets/${relPath}`;
 
             // Leer el archivo como ArrayBuffer y escribirlo
             const buffer = await file.arrayBuffer();
-            const { writeFile, BaseDirectory: BD } = window.__TAURI__.fs;
+            const { writeFile, mkdir, BaseDirectory: BD } = window.__TAURI__.fs;
+            if (typeof mkdir === 'function') {
+                await mkdir(`DevSnippets/attachments/${attachmentType}`, { baseDir: BD.Document, recursive: true });
+            }
             await writeFile(destPath, new Uint8Array(buffer), { baseDir: BD.Document });
 
             // Construir URL de visualización

@@ -781,7 +781,7 @@ const Editor = (() => {
         if (selectBtn) {
             selectBtn.onclick = () => {
                 if (typeof Attachments === 'undefined' || !Attachments.selectAndCopy) return App.showToast('Funcionalidad de attachments no disponible', false);
-                Attachments.selectAndCopy(snipObj.id, (res) => {
+                Attachments.selectAndCopy(snipObj.id, 'technical', (res) => {
                     if (res && res.relativePath) {
                         refreshImageUI(res.relativePath, res.displayUrl);
                     }
@@ -792,7 +792,7 @@ const Editor = (() => {
         if (changeBtn) {
             changeBtn.onclick = () => {
                 if (typeof Attachments === 'undefined' || !Attachments.selectAndCopy) return App.showToast('Funcionalidad de attachments no disponible', false);
-                Attachments.selectAndCopy(snipObj.id, (res) => {
+                Attachments.selectAndCopy(snipObj.id, 'technical', (res) => {
                     if (res && res.relativePath) {
                         refreshImageUI(res.relativePath, res.displayUrl);
                     }

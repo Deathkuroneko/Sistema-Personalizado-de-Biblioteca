@@ -380,7 +380,7 @@ const EditorMedia = (() => {
 
         // ── Portada: click para cambiar ───────────────────────
         document.getElementById('drawer-cover-btn').addEventListener('click', () => {
-            Attachments.selectAndCopy(cardObj.id, ({ relativePath, displayUrl }) => {
+            Attachments.selectAndCopy(cardObj.id, 'media', ({ relativePath, displayUrl }) => {
                 workCard.coverImage = relativePath;
                 const wrap = document.getElementById('drawer-cover-wrap');
                 // Actualizar preview

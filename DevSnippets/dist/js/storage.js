@@ -555,22 +555,45 @@ const Storage = (() => {
     }
 
     // ── Attachment cleanup helpers ──────────────────────────
-    function _collectAttachmentFilenamesFromObj(obj, set) {
+    function _collectAttachmentRefsFromObj(obj, set) {
         if (!obj || typeof obj !== 'object') return;
         if (Array.isArray(obj)) {
-            obj.forEach(i => _collectAttachmentFilenamesFromObj(i, set));
+            obj.forEach(i => _collectAttachmentRefsFromObj(i, set));
             return;
         }
         for (const k of Object.keys(obj)) {
             const v = obj[k];
-            if (typeof v === 'string' && v.includes('attachments/')) {
-                const parts = v.split('/');
-                const name = parts[parts.length - 1];
-                if (name) set.add(name);
+            if (typeof v === 'string' && v.replace(/\\/g, '/').includes('attachments/')) {
+                const normalized = v.replace(/\\/g, '/');
+                const idx = normalized.indexOf('attachments/');
+                const ref = normalized.slice(idx);
+                if (ref) set.add(ref);
             } else if (typeof v === 'object' && v !== null) {
-                _collectAttachmentFilenamesFromObj(v, set);
+                _collectAttachmentRefsFromObj(v, set);
             }
         }
+    }
+
+    async function _listAttachmentFiles(fs, dir, baseRel = 'attachments') {
+        const { readDir, BaseDirectory } = fs;
+        const entries = await readDir(dir, { baseDir: BaseDirectory.Document });
+        const files = [];
+        for (const e of entries) {
+            const name = e.name;
+            if (!name) continue;
+            const rel = `${baseRel}/${name}`;
+            const path = `${dir}/${name}`;
+            if (e.children || e.isDirectory) {
+                try {
+                    files.push(...await _listAttachmentFiles(fs, path, rel));
+                } catch (err) {
+                    console.warn('[Storage] Failed to scan attachment subdir', path, err);
+                }
+            } else {
+                files.push({ rel, path });
+            }
+        }
+        return files;
     }
 
     async function cleanupAttachments() {
@@ -579,18 +602,15 @@ const Storage = (() => {
             const fs = _getFS();
             const { readDir, BaseDirectory } = fs;
             const used = new Set();
-            // Collect all referenced attachment filenames across DB
-            _db.titles.forEach(t => _collectAttachmentFilenamesFromObj(t, used));
+            // Collect all referenced attachment paths across DB
+            _db.titles.forEach(t => _collectAttachmentRefsFromObj(t, used));
 
             const attDir = ATT_DIR; // already includes DevSnippets/attachments
-            const entries = await readDir(attDir, { baseDir: BaseDirectory.Document });
-            for (const e of entries) {
-                // e.name is expected
-                const fname = e.name;
-                if (!fname) continue;
-                if (!used.has(fname)) {
+            const files = await _listAttachmentFiles(fs, attDir);
+            for (const file of files) {
+                if (!used.has(file.rel)) {
                     try {
-                        const targetPath = `${attDir}/${fname}`;
+                        const targetPath = file.path;
                         const remover = fs.removeFile || fs.remove || fs.unlink;
                         if (typeof remover === 'function') {
                             await remover(targetPath, { baseDir: BaseDirectory.Document });
@@ -599,9 +619,9 @@ const Storage = (() => {
                         } else {
                             throw new Error('No fs remove function available');
                         }
-                        console.info('[Storage] Removed orphan attachment:', fname);
+                        console.info('[Storage] Removed orphan attachment:', file.rel);
                     } catch (remErr) {
-                        console.warn('[Storage] Failed to remove attachment', fname, remErr);
+                        console.warn('[Storage] Failed to remove attachment', file.rel, remErr);
                     }
                 }
             }
