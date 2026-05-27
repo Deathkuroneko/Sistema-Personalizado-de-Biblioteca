@@ -10,7 +10,7 @@
 
 const RenderTechnical = (() => {
 
-n    // ── Helpers (locales) ─────────────────────────────────────
+    // ── Helpers (locales) ─────────────────────────────────────
     function _escape(t = '') {
         return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
@@ -31,6 +31,48 @@ n    // ── Helpers (locales) ───────────────�
                 </button>
                 <div id="${menuId}" class="dropdown-menu">${html}</div>
             </div>`;
+    }
+
+    function _normalizeSnippetBlocks(snipObj) {
+        const blocks = Array.isArray(snipObj.blocks) && snipObj.blocks.length
+            ? snipObj.blocks
+            : [{ type: snipObj.contentType || 'code', blockTitle: snipObj.blockTitle || '', content: snipObj.code || '' }];
+
+        return blocks.map(block => ({
+            type: block && block.type === 'text' ? 'text' : 'code',
+            blockTitle: block && block.blockTitle ? String(block.blockTitle) : '',
+            content: block && block.content !== undefined ? String(block.content) : '',
+        }));
+    }
+
+    function _copyButton(content) {
+        const copyArg = JSON.stringify(_escape(content)).replace(/'/g, '&#39;');
+        return `<button class="copy-btn" title="Copiar" onclick='App.copyCode(this, ${copyArg})'>${_icon('copy',14)}</button>`;
+    }
+
+    function _renderSnippetBlock(block) {
+        const fallbackTitle = block.type === 'code' ? 'Código' : 'Texto';
+        const blockTitle = _escape(block.blockTitle || fallbackTitle);
+        const escapedContent = _escape(block.content || '');
+
+        if (block.type === 'code') {
+            return `<div class="code-block-wrapper">
+                    <div class="block-header">
+                        <div class="block-title">${blockTitle}</div>
+                        <div class="block-actions">${_copyButton(block.content || '')}</div>
+                    </div>
+                    <div class="line-nums">${(block.content || '').split('\n').map((_, i) => i + 1).join('\n')}</div>
+                    <pre><code>${escapedContent}</code></pre>
+               </div>`;
+        }
+
+        return `<div class="text-block-wrapper">
+                    <div class="block-header">
+                        <div class="block-title">${blockTitle}</div>
+                        <div class="block-actions">${_copyButton(block.content || '')}</div>
+                    </div>
+                    <div class="text-block">${escapedContent.replace(/\n/g, '<br>')}</div>
+               </div>`;
     }
 
     // ── Sortable robusto para Tauri/WebView2 ──────────────────
@@ -56,7 +98,7 @@ n    // ── Helpers (locales) ───────────────�
     // ── Render de un título técnico completo ──────────────────
     function renderTitle(titleObj, tIdx, openSet, makeDetails) {
         let titleSnipCount = 0;
-n        titleObj.categories.forEach(c => c.subtitles.forEach(s => titleSnipCount += s.snippets.length));
+        titleObj.categories.forEach(c => c.subtitles.forEach(s => titleSnipCount += s.snippets.length));
 
         const tEl = makeDetails(`t_${titleObj.id}`, openSet, 'title-card title-card--technical');
         tEl.setAttribute('data-id', titleObj.id);
@@ -162,7 +204,7 @@ n        titleObj.categories.forEach(c => c.subtitles.forEach(s => titleSnipCoun
             }
         });
 
-n        return cEl;
+        return cEl;
     }
 
     function _renderSubtitle(subObj, tIdx, cIdx, sIdx, openSet, makeDetails, stats) {
@@ -267,56 +309,14 @@ n        return cEl;
     // ── Snippet Card ──────────────────────────────────────────
     function _buildSnippetCard(snipObj, tIdx, cIdx, sIdx, snIdx) {
         const card = document.createElement('div');
-        // Detectar snippets "largos" y comenzar colapsados para evitar overflow
-        const contentType = snipObj.contentType || 'code';
-        const raw = contentType === 'code' ? (snipObj.code || '') : (snipObj.code || '');
-        const isLong = (contentType === 'code')
-            ? raw.split('\n').length > 12 || raw.length > 1200
-            : raw.length > 400;
-        card.className  = 'snippet-card' + (isLong ? ' collapsed' : '');
+        const blocks = _normalizeSnippetBlocks(snipObj);
+        const searchText = blocks.map(block => `${block.blockTitle} ${block.content}`).join(' ');
+        card.className  = 'snippet-card';
         card.dataset.id = snipObj.id;
-        card.dataset.search = `${snipObj.title} ${snipObj.description} ${snipObj.code}`.toLowerCase();
+        card.dataset.search = `${snipObj.title} ${snipObj.description} ${snipObj.code || ''} ${searchText}`.toLowerCase();
 
         const favCls = snipObj.fav ? 'active' : '';
-        const escapedCode = _escape(snipObj.code || '');
-        const fallbackTitle = contentType === 'code' ? 'Código' : 'Texto';
-        const blockTitle = _escape(snipObj.blockTitle || fallbackTitle);
-
-        const codeBlockHTML = contentType === 'code'
-            ? `<div class="code-block-wrapper">
-                    <div class="block-header">
-                            <div class="block-title" contenteditable="true" data-orig="${blockTitle}"
-                                onfocus="this.dataset.orig=this.textContent"
-                                ondblclick="(function(el){ const btn = el.closest('.snippet-card')?.querySelector('.expand-btn'); if(btn && typeof App !== 'undefined' && App.toggleExpand) App.toggleExpand(btn); })(this)"
-                                onkeydown="(function(e,el,id){ if(e.key==='Enter'){ e.preventDefault(); el.blur(); } if(e.key==='Escape'){ el.textContent=el.dataset.orig; el.blur(); } })(event,this,'${snipObj.id}')"
-                                onblur="App.updateBlockTitle(this, '${snipObj.id}')">${blockTitle}</div>
-                        <div class="block-actions">
-                            <button class="copy-btn" title="Copiar" onclick="App.copyCode(this, \`${escapedCode.replace(/\\/g, '\\\\').replace(/`/g, '\\`')}\`)">${_icon('copy',14)}</button>
-                            <button class="copy-btn add-block-btn" title="Añadir bloque" onclick="(function(e){ e.stopPropagation(); Editor.addSnippet(event, ${tIdx}, ${cIdx}, ${sIdx}); })(event)">${_icon('plus',12)}</button>
-                            <button class="copy-btn remove-block-btn" title="Eliminar bloque" onclick="(function(e){ e.stopPropagation(); Editor.deleteItem(event,'snip',${tIdx},${cIdx},${sIdx},${snIdx}); })(event)">${_icon('trash-2',12)}</button>
-                            <button class="copy-btn expand-btn" title="Expandir/Contraer" aria-expanded="${!isLong}"
-                                onclick="(function(e){ e.stopPropagation(); App.toggleExpand(this); })(event)">${isLong ? _icon('chevron-down',14) : _icon('chevron-up',14)}</button>
-                        </div>
-                    </div>
-                    <div class="line-nums">${(snipObj.code||'').split('\n').map((_, i) => i + 1).join('\n')}</div>
-                    <pre><code>${escapedCode}</code></pre>
-               </div>`
-            : `<div class="text-block-wrapper">
-                    <div class="block-header">
-                        <div class="block-title" contenteditable="true" data-orig="${blockTitle}"
-                             onfocus="this.dataset.orig=this.textContent"
-                             onkeydown="(function(e,el,id){ if(e.key==='Enter'){ e.preventDefault(); el.blur(); } if(e.key==='Escape'){ el.textContent=el.dataset.orig; el.blur(); } })(event,this,'${snipObj.id}')"
-                             onblur="App.updateBlockTitle(this, '${snipObj.id}')">${blockTitle}</div>
-                        <div class="block-actions">
-                            <button class="copy-btn" title="Copiar" onclick="App.copyCode(this, \`${escapedCode.replace(/\\/g, '\\\\').replace(/`/g, '\\`')}\`)">${_icon('copy',14)}</button>
-                            <button class="copy-btn add-block-btn" title="Añadir bloque" onclick="(function(e){ e.stopPropagation(); Editor.addSnippet(event, ${tIdx}, ${cIdx}, ${sIdx}); })(event)">${_icon('plus',12)}</button>
-                            <button class="copy-btn remove-block-btn" title="Eliminar bloque" onclick="(function(e){ e.stopPropagation(); Editor.deleteItem(event,'snip',${tIdx},${cIdx},${sIdx},${snIdx}); })(event)">${_icon('trash-2',12)}</button>
-                            <button class="copy-btn expand-btn" title="Expandir/Contraer" aria-expanded="${!isLong}"
-                                onclick="(function(e){ e.stopPropagation(); App.toggleExpand(this); })(event)">${isLong ? _icon('chevron-down',14) : _icon('chevron-up',14)}</button>
-                        </div>
-                    </div>
-                    <div class="text-block">${escapedCode.replace(/\n/g, '<br>')}</div>
-               </div>`;
+        const codeBlockHTML = blocks.map(_renderSnippetBlock).join('');
 
         card.innerHTML = `
             <div class="snippet-view">

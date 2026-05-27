@@ -112,17 +112,6 @@ const App = (() => {
         });
     }
 
-    function updateBlockTitle(el, id) {
-        if (!el || !id) return;
-        const val = el.textContent.trim();
-        const orig = el.dataset.orig || '';
-        if (val === orig) return;
-        if (typeof Storage !== 'undefined' && Storage.editSnippetById) {
-            Storage.editSnippetById(id, { blockTitle: val });
-            showToast('Título de bloque guardado.', false);
-        }
-    }
-
     async function saveManual() {
         try {
             await Storage.save(false);

@@ -33,6 +33,48 @@ const RenderTechnical = (() => {
             </div>`;
     }
 
+    function _normalizeSnippetBlocks(snipObj) {
+        const blocks = Array.isArray(snipObj.blocks) && snipObj.blocks.length
+            ? snipObj.blocks
+            : [{ type: snipObj.contentType || 'code', blockTitle: snipObj.blockTitle || '', content: snipObj.code || '' }];
+
+        return blocks.map(block => ({
+            type: block && block.type === 'text' ? 'text' : 'code',
+            blockTitle: block && block.blockTitle ? String(block.blockTitle) : '',
+            content: block && block.content !== undefined ? String(block.content) : '',
+        }));
+    }
+
+    function _copyButton(content) {
+        const copyArg = JSON.stringify(_escape(content)).replace(/'/g, '&#39;');
+        return `<button class="copy-btn" title="Copiar" onclick='App.copyCode(this, ${copyArg})'>${_icon('copy',14)}</button>`;
+    }
+
+    function _renderSnippetBlock(block) {
+        const fallbackTitle = block.type === 'code' ? 'Código' : 'Texto';
+        const blockTitle = _escape(block.blockTitle || fallbackTitle);
+        const escapedContent = _escape(block.content || '');
+
+        if (block.type === 'code') {
+            return `<div class="code-block-wrapper">
+                    <div class="block-header">
+                        <div class="block-title">${blockTitle}</div>
+                        <div class="block-actions">${_copyButton(block.content || '')}</div>
+                    </div>
+                    <div class="line-nums">${(block.content || '').split('\n').map((_, i) => i + 1).join('\n')}</div>
+                    <pre><code>${escapedContent}</code></pre>
+               </div>`;
+        }
+
+        return `<div class="text-block-wrapper">
+                    <div class="block-header">
+                        <div class="block-title">${blockTitle}</div>
+                        <div class="block-actions">${_copyButton(block.content || '')}</div>
+                    </div>
+                    <div class="text-block">${escapedContent.replace(/\n/g, '<br>')}</div>
+               </div>`;
+    }
+
     // ── Sortable robusto para Tauri/WebView2 ──────────────────
     function _initSortable(container, options) {
         if (typeof Sortable === 'undefined') return;
@@ -267,32 +309,14 @@ const RenderTechnical = (() => {
     // ── Snippet Card ──────────────────────────────────────────
     function _buildSnippetCard(snipObj, tIdx, cIdx, sIdx, snIdx) {
         const card = document.createElement('div');
-        const contentType = snipObj.contentType || 'code';
+        const blocks = _normalizeSnippetBlocks(snipObj);
+        const searchText = blocks.map(block => `${block.blockTitle} ${block.content}`).join(' ');
         card.className  = 'snippet-card';
         card.dataset.id = snipObj.id;
-        card.dataset.search = `${snipObj.title} ${snipObj.description} ${snipObj.code}`.toLowerCase();
+        card.dataset.search = `${snipObj.title} ${snipObj.description} ${snipObj.code || ''} ${searchText}`.toLowerCase();
 
         const favCls = snipObj.fav ? 'active' : '';
-        const escapedCode = _escape(snipObj.code || '');
-        const fallbackTitle = contentType === 'code' ? 'Código' : 'Texto';
-        const blockTitle = _escape(snipObj.blockTitle || fallbackTitle);
-
-        const codeBlockHTML = contentType === 'code'
-            ? `<div class="code-block-wrapper">
-                    <div class="block-title" contenteditable="true" data-orig="${blockTitle}"
-                        onfocus="this.dataset.orig=this.textContent"
-                        onkeydown="(function(e,el,id){ if(e.key==='Enter'){ e.preventDefault(); el.blur(); } if(e.key==='Escape'){ el.textContent=el.dataset.orig; el.blur(); } })(event,this,'${snipObj.id}')"
-                        onblur="App.updateBlockTitle(this, '${snipObj.id}')">${blockTitle}</div>
-                    <div class="line-nums">${(snipObj.code||'').split('\n').map((_, i) => i + 1).join('\n')}</div>
-                    <pre><code>${escapedCode}</code></pre>
-               </div>`
-            : `<div class="text-block-wrapper">
-                    <div class="block-title" contenteditable="true" data-orig="${blockTitle}"
-                         onfocus="this.dataset.orig=this.textContent"
-                         onkeydown="(function(e,el,id){ if(e.key==='Enter'){ e.preventDefault(); el.blur(); } if(e.key==='Escape'){ el.textContent=el.dataset.orig; el.blur(); } })(event,this,'${snipObj.id}')"
-                         onblur="App.updateBlockTitle(this, '${snipObj.id}')">${blockTitle}</div>
-                    <div class="text-block">${escapedCode.replace(/\n/g, '<br>')}</div>
-               </div>`;
+        const codeBlockHTML = blocks.map(_renderSnippetBlock).join('');
 
         card.innerHTML = `
             <div class="snippet-view">

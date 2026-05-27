@@ -46,7 +46,7 @@ const Drafts = (() => {
             if (typeof Storage !== 'undefined' && Storage.editSnippetById) {
                 // Only commit fields that are part of snippet payload
                 const payload = {};
-                ['title','description','code','contentType','coverImage','blockTitle','fav'].forEach(k => { if (d[k] !== undefined) payload[k] = d[k]; });
+                ['title','description','code','contentType','blocks','coverImage','blockTitle','fav'].forEach(k => { if (d[k] !== undefined) payload[k] = d[k]; });
                 Storage.saveStateForUndo();
                 console.info('[Drafts] commit payload for', id, payload);
                 const ok = Storage.editSnippetById(id, payload);

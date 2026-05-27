@@ -87,6 +87,7 @@ const Storage = (() => {
                             if (!snip.description)     { snip.description = ''; changed = true; }
                             if (!snip.contentType)    { snip.contentType = 'code'; changed = true; }
                             if (snip.blockTitle === undefined) { snip.blockTitle = ''; changed = true; }
+                            if (snip.blocks !== undefined && !Array.isArray(snip.blocks)) { snip.blocks = []; changed = true; }
                         });
                     });
                 });
@@ -170,7 +171,7 @@ const Storage = (() => {
             console.info('[Storage] DB lista. Títulos:', _db.titles.length, '| Tags:', _db.tags.length);
             if (changed) await _persist();
 
-n        } catch (e) {
+        } catch (e) {
             console.error('[Storage] Error cargando datos:', e);
             _db = { titles: [], tags: [] };
         }
@@ -344,10 +345,10 @@ n        } catch (e) {
     function getCollection(tIdx, colIdx)          { return _db.titles[tIdx].collections[colIdx]; }
     function getCard(tIdx, colIdx, cardIdx)       { return _db.titles[tIdx].collections[colIdx].cards[cardIdx]; }
 
-n    // ── CRUD Helpers — Tags ───────────────────────────────────
+    // ── CRUD Helpers — Tags ───────────────────────────────────
     function findTagById(id) { return _db.tags.find(t => t.id === id) || null; }
 
-n    // ── Find by ID helpers (return item + indices)
+    // ── Find by ID helpers (return item + indices)
     function findTitleById(id) {
         for (let tIdx = 0; tIdx < _db.titles.length; tIdx++) {
             const t = _db.titles[tIdx];
@@ -356,7 +357,7 @@ n    // ── Find by ID helpers (return item + indices)
         return null;
     }
 
-n    function findCategoryById(id) {
+    function findCategoryById(id) {
         for (let tIdx = 0; tIdx < _db.titles.length; tIdx++) {
             const t = _db.titles[tIdx];
             if (!t.categories) continue;

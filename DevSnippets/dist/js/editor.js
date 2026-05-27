@@ -279,16 +279,6 @@ const Editor = (() => {
         Storage.save(true);
     }
 
-    // Actualizar título del bloque (editable inline)
-    function updateBlockTitle(el, id) {
-        if (!el || !id) return;
-        const val = el.textContent.trim();
-        const orig = el.dataset.orig || '';
-        if (val === orig) return;
-        Storage.editSnippetById(id, { blockTitle: val });
-        App.showToast('Título de bloque guardado.', false);
-    }
-
     // ══════════════════════════════════════════════════════════
     // EDICIÓN INLINE — Texto simple (Título)
     // ══════════════════════════════════════════════════════════
@@ -599,6 +589,56 @@ const Editor = (() => {
     // EDICIÓN INLINE — Snippet
     // ══════════════════════════════════════════════════════════
 
+    function _normalizeSnippetBlocks(snipObj, draftObj) {
+        const source = draftObj && Array.isArray(draftObj.blocks) ? draftObj.blocks : snipObj.blocks;
+        const blocks = Array.isArray(source) && source.length
+            ? source
+            : [{ type: snipObj.contentType || 'code', blockTitle: snipObj.blockTitle || '', content: snipObj.code || '' }];
+
+        return blocks.map(block => ({
+            type: block && block.type === 'text' ? 'text' : 'code',
+            blockTitle: block && block.blockTitle !== undefined ? String(block.blockTitle) : '',
+            content: block && block.content !== undefined ? String(block.content) : '',
+        }));
+    }
+
+    function _readSnippetBlocks(editDiv) {
+        return Array.from(editDiv.querySelectorAll('.snippet-edit-block')).map(blockEl => {
+            const typeEl = blockEl.querySelector('.ef_block_type');
+            const titleEl = blockEl.querySelector('.ef_block_title');
+            const contentEl = blockEl.querySelector('.ef_block_content');
+            return {
+                type: typeEl && typeEl.value === 'text' ? 'text' : 'code',
+                blockTitle: titleEl ? titleEl.value.trim() : '',
+                content: contentEl ? contentEl.value : '',
+            };
+        });
+    }
+
+    function _renderSnippetEditBlocks(container, blocks) {
+        container.innerHTML = blocks.map((block, idx) => `
+            <div class="snippet-edit-block" data-block-index="${idx}" style="margin-bottom:8px;">
+                <label style="display:block;margin-bottom:4px;">Tipo:</label>
+                <select class="inline-select ef_block_type" style="margin-bottom:6px;">
+                    <option value="code"${block.type === 'code' ? ' selected' : ''}>Code</option>
+                    <option value="text"${block.type === 'text' ? ' selected' : ''}>Text</option>
+                </select>
+                <label style="display:block;margin-bottom:4px;">Título del bloque:</label>
+                <input type="text" class="inline-input-sm ef_block_title" value="${_escape(block.blockTitle || '')}" placeholder="Título del bloque" style="width:100%;margin-bottom:6px;">
+                <label style="display:block;margin-bottom:4px;">Contenido:</label>
+                <textarea class="inline-textarea ef_block_content" placeholder="Contenido del bloque..."></textarea>
+            </div>
+        `).join('');
+
+        const textareas = Array.from(container.querySelectorAll('.ef_block_content'));
+        textareas.forEach((textarea, idx) => {
+            textarea.value = blocks[idx] ? blocks[idx].content : '';
+            const autoResize = () => { textarea.style.height = 'auto'; textarea.style.height = textarea.scrollHeight + 'px'; };
+            textarea.addEventListener('input', autoResize);
+            setTimeout(autoResize, 0);
+        });
+    }
+
     function _startSnippetEdit(card, tIdx, cIdx, sIdx, snIdx, isNew = false) {
         if (card.dataset.editing) return;
         card.dataset.editing = '1';
@@ -614,6 +654,7 @@ const Editor = (() => {
 
         const d = (typeof Drafts !== 'undefined' && Drafts.get) ? Drafts.get(snipObj.id) : null;
         const currentCover = (d && d.coverImage !== undefined) ? d.coverImage : snipObj.coverImage;
+        let blocks = _normalizeSnippetBlocks(snipObj, d);
         const coverUrl = (currentCover && typeof Attachments !== 'undefined' && Attachments.getDisplayUrl) ? Attachments.getDisplayUrl(currentCover) : null;
         const isStaged = !!(d && Object.prototype.hasOwnProperty.call(d, 'coverImage') && d.coverImage !== snipObj.coverImage);
 
@@ -627,11 +668,11 @@ const Editor = (() => {
                     value="${_escape(snipObj.description)}"
                     placeholder="Descripción breve (opcional)"
                     style="width:100%">
-                <select id="ef_contentType" class="inline-select" style="margin-bottom:6px;">
-                    <option value="code">Code</option>
-                    <option value="text">Text</option>
-                </select>
-                <textarea id="ef_code" class="inline-textarea" placeholder="Escribe el código aquí…"></textarea>
+                <div class="snippet-block-actions" style="display:flex;gap:6px;margin-bottom:8px;">
+                    <button id="ef_add_block" class="btn" type="button">Añadir bloque</button>
+                    <button id="ef_remove_block" class="btn" type="button">Quitar bloque</button>
+                </div>
+                <div id="ef_blocks"></div>
                 <div class="snippet-image-editor">
                     ${coverUrl ? `
                         <div class="image-preview">
@@ -652,20 +693,28 @@ const Editor = (() => {
             </div>
         `;
 
-        const codeTA = editDiv.querySelector('#ef_code');
-        const contentSel = editDiv.querySelector('#ef_contentType');
-        codeTA.value = d && d.code !== undefined ? d.code : (snipObj.code || '');
-        contentSel.value = d && d.contentType ? d.contentType : (snipObj.contentType || 'code');
+        const blocksWrap = editDiv.querySelector('#ef_blocks');
+        const renderBlocks = () => _renderSnippetEditBlocks(blocksWrap, blocks);
+        renderBlocks();
         const titleEl = editDiv.querySelector('#ef_title');
         const descEl = editDiv.querySelector('#ef_desc');
         if (d) { if (d.title !== undefined) titleEl.value = d.title; if (d.description !== undefined) descEl.value = d.description; }
 
-        const autoResize = () => { codeTA.style.height = 'auto'; codeTA.style.height = codeTA.scrollHeight + 'px'; };
-        codeTA.addEventListener('input', autoResize);
-        setTimeout(autoResize, 0);
-
         if (typeof lucide !== 'undefined') lucide.createIcons({ node: editDiv });
         editDiv.querySelector('#ef_title').focus();
+
+        editDiv.querySelector('#ef_add_block').onclick = () => {
+            blocks = _readSnippetBlocks(editDiv);
+            blocks.push({ type: 'code', blockTitle: '', content: '' });
+            renderBlocks();
+        };
+
+        editDiv.querySelector('#ef_remove_block').onclick = () => {
+            blocks = _readSnippetBlocks(editDiv);
+            if (blocks.length <= 1) return;
+            blocks.pop();
+            renderBlocks();
+        };
 
         const rollback = () => {
             if (!isNew) return;
@@ -677,22 +726,24 @@ const Editor = (() => {
         const save = () => {
             const title = editDiv.querySelector('#ef_title').value.trim();
             const desc = editDiv.querySelector('#ef_desc').value.trim();
-            const code = codeTA.value;
-            const contentType = contentSel.value || 'code';
+            const blocks = _readSnippetBlocks(editDiv);
+            const firstBlock = blocks[0] || { type: 'code', content: '' };
+            const code = firstBlock.content;
+            const contentType = firstBlock.type || 'code';
             if (!title) {
                 editDiv.querySelector('#ef_title').style.borderColor = 'var(--danger)';
                 return;
             }
-            if (contentType === 'code' && !code.trim()) {
-                codeTA.style.borderColor = 'var(--danger)';
+            const firstCodeBlock = editDiv.querySelector('.ef_block_content');
+            if (firstBlock.type === 'code' && !firstBlock.content.trim()) {
+                if (firstCodeBlock) firstCodeBlock.style.borderColor = 'var(--danger)';
                 return;
             }
             Storage.saveStateForUndo();
-            const payload = { title, description: desc, code, contentType };
+            const payload = { title, description: desc, code, contentType, blockTitle: firstBlock.blockTitle || '', blocks };
             const d = (typeof Drafts !== 'undefined' && Drafts.get) ? Drafts.get(snipObj.id) : null;
             if (d) {
                 if (d.coverImage !== undefined) payload.coverImage = d.coverImage;
-                if (d.blockTitle !== undefined) payload.blockTitle = d.blockTitle;
                 if (d.fav !== undefined) payload.fav = d.fav;
             }
             if (typeof Storage !== 'undefined' && Storage.editSnippetById) {
@@ -718,7 +769,7 @@ const Editor = (() => {
 
         editDiv.querySelector('#ef_save').onclick = save;
         editDiv.querySelector('#ef_cancel').onclick = cancel;
-        codeTA.addEventListener('keydown', ev => {
+        editDiv.addEventListener('keydown', ev => {
             if ((ev.ctrlKey || ev.metaKey) && ev.key === 'Enter') { ev.preventDefault(); save(); }
         });
 
@@ -729,7 +780,16 @@ const Editor = (() => {
 
         const refreshImageUI = (relativePath, displayUrl) => {
             // Stage into Drafts rather than persisting immediately
-            try { if (typeof Drafts !== 'undefined' && Drafts.update) Drafts.update(snipObj.id, { coverImage: relativePath }); } catch (e) { console.warn('[Editor] Drafts.update failed', e); }
+            try {
+                if (typeof Drafts !== 'undefined' && Drafts.update) {
+                    Drafts.update(snipObj.id, {
+                        title: editDiv.querySelector('#ef_title').value,
+                        description: editDiv.querySelector('#ef_desc').value,
+                        coverImage: relativePath,
+                        blocks: _readSnippetBlocks(editDiv),
+                    });
+                }
+            } catch (e) { console.warn('[Editor] Drafts.update failed', e); }
             
             // Inject preview manually to avoid losing focus / full re-render
             const imgEditor = editDiv.querySelector('.snippet-image-editor');
@@ -758,7 +818,16 @@ const Editor = (() => {
                 }
                 if (rBtn) {
                     rBtn.onclick = () => {
-                        try { if (typeof Drafts !== 'undefined' && Drafts.update) Drafts.update(snipObj.id, { coverImage: null }); } catch (e) { console.warn('[Editor] Drafts.update failed', e); }
+                        try {
+                            if (typeof Drafts !== 'undefined' && Drafts.update) {
+                                Drafts.update(snipObj.id, {
+                                    title: editDiv.querySelector('#ef_title').value,
+                                    description: editDiv.querySelector('#ef_desc').value,
+                                    coverImage: null,
+                                    blocks: _readSnippetBlocks(editDiv),
+                                });
+                            }
+                        } catch (e) { console.warn('[Editor] Drafts.update failed', e); }
                         imgEditor.innerHTML = `<button id="ef_select_image" class="btn">Seleccionar imagen</button>`;
                         const sBtn = imgEditor.querySelector('#ef_select_image');
                         if (sBtn) {
@@ -794,8 +863,18 @@ const Editor = (() => {
         if (removeBtn) {
             removeBtn.onclick = () => {
                 // Stage removal in draft
-                try { if (typeof Drafts !== 'undefined' && Drafts.update) Drafts.update(snipObj.id, { coverImage: null }); } catch (e) { console.warn('[Editor] Drafts.update failed', e); }
-                setTimeout(() => { _startSnippetEdit(card, tIdx, cIdx, sIdx, snIdx, false); }, 40);
+                try {
+                    if (typeof Drafts !== 'undefined' && Drafts.update) {
+                        Drafts.update(snipObj.id, {
+                            title: editDiv.querySelector('#ef_title').value,
+                            description: editDiv.querySelector('#ef_desc').value,
+                            coverImage: null,
+                            blocks: _readSnippetBlocks(editDiv),
+                        });
+                    }
+                } catch (e) { console.warn('[Editor] Drafts.update failed', e); }
+                delete card.dataset.editing;
+                setTimeout(() => { _startSnippetEdit(card, tIdx, cIdx, sIdx, snIdx, isNew); }, 40);
             };
         }
     }
@@ -816,7 +895,6 @@ const Editor = (() => {
         addSubtitle, editSubtitle,
         addSnippet, editSnippet,
         deleteItem, toggleFav,
-        updateBlockTitle,
         initModalEvents,
     };
 })();

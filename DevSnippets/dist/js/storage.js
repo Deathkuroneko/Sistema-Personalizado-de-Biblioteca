@@ -87,6 +87,7 @@ const Storage = (() => {
                             if (!snip.description) { snip.description = ''; changed = true; }
                             if (!snip.contentType) { snip.contentType = 'code'; changed = true; }
                             if (snip.blockTitle === undefined) { snip.blockTitle = ''; changed = true; }
+                            if (snip.blocks !== undefined && !Array.isArray(snip.blocks)) { snip.blocks = []; changed = true; }
                         });
                     });
                 });

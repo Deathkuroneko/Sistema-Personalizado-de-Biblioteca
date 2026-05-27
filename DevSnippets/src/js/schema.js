@@ -61,6 +61,7 @@ const Schema = (() => {
             description: '',
             code:        '',
             contentType: 'code',
+            blocks:      [{ type: 'code', blockTitle: '', content: '' }],
             fav:         false,
             ...overrides,
         };
