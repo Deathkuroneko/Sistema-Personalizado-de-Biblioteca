@@ -48,9 +48,9 @@ const Drafts = (() => {
                 const payload = {};
                 ['title','description','code','contentType','blocks','coverImage','blockTitle','fav'].forEach(k => { if (d[k] !== undefined) payload[k] = d[k]; });
                 Storage.saveStateForUndo();
-                console.info('[Drafts] commit payload for', id, payload);
+                console.debug('[Drafts] commit payload for', id, payload);
                 const ok = Storage.editSnippetById(id, payload);
-                try { const f = Storage.findSnippetById ? Storage.findSnippetById(id) : null; console.info('[Drafts] snippet after editSnippetById:', f ? f.item : null); } catch(e) {}
+                try { const f = Storage.findSnippetById ? Storage.findSnippetById(id) : null; console.debug('[Drafts] snippet after editSnippetById:', f ? f.item : null); } catch(e) {}
                 // If Storage.editSnippetById returns false, fallback to direct mutate + save
                 if (!ok) {
                     // best-effort: try to find and apply

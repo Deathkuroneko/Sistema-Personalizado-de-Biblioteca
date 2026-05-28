@@ -30,7 +30,7 @@ const Storage = (() => {
         }
         // Si es un array (formato v1), wrapearlo
         if (Array.isArray(raw)) {
-            console.info('[Storage] Migrando DB v1 (Array) → v2 ({ titles, tags }) ✓');
+            console.debug('[Storage] Migrando DB v1 (Array) → v2 ({ titles, tags }) ✓');
             return { titles: raw, tags: [] };
         }
         return { titles: [], tags: [] };
@@ -128,7 +128,7 @@ const Storage = (() => {
     // ── Load ──────────────────────────────────────────────────
     async function load() {
         const isTauri = _isTauri();
-        console.info('[Storage] load() — isTauri=' + isTauri);
+        console.debug('[Storage] load() — isTauri=' + isTauri);
         try {
             let raw = null;
             if (isTauri) {
@@ -147,7 +147,7 @@ const Storage = (() => {
                     const fileExists = await exists(filePath, { baseDir: BaseDirectory.Document });
                     if (fileExists) {
                         raw = await readTextFile(filePath, { baseDir: BaseDirectory.Document });
-                        console.info('[Storage] Archivo leído OK, bytes:', raw?.length);
+                        console.debug('[Storage] Archivo leído OK, bytes:', raw?.length);
                     }
                 } catch (fsErr) {
                     console.error('[Storage] Error FS — fallback a localStorage:', fsErr);
@@ -168,7 +168,7 @@ const Storage = (() => {
             if (!Array.isArray(rootObj.tags)) rootObj.tags = [];
 
             _db = rootObj;
-            console.info('[Storage] DB lista. Títulos:', _db.titles.length, '| Tags:', _db.tags.length);
+            console.debug('[Storage] DB lista. Títulos:', _db.titles.length, '| Tags:', _db.tags.length);
             if (changed) await _persist();
 
         } catch (e) {
@@ -185,7 +185,7 @@ const Storage = (() => {
             try {
                 const { writeTextFile, BaseDirectory } = _getFS();
                 await writeTextFile(`${DIR_NAME}/${FILE_NAME}`, json, { baseDir: BaseDirectory.Document });
-                console.info('[Storage] Guardado en disco OK');
+                console.debug('[Storage] Guardado en disco OK');
             } catch (e) {
                 console.error('[Storage] Error al escribir en disco:', e);
                 localStorage.setItem(DB_KEY, json);
@@ -300,7 +300,7 @@ const Storage = (() => {
             if (Array.isArray(legacyData) && legacyData.length > 0) {
                 _db.titles = legacyData;
                 await _persist();
-                console.info('[Storage] Datos migrados desde snippetsDBUltra ✓');
+                console.debug('[Storage] Datos migrados desde snippetsDBUltra ✓');
             }
         } catch (e) {
             console.warn('[Storage] No se pudo migrar datos legacy:', e);
@@ -438,11 +438,11 @@ const Storage = (() => {
         const found = findSnippetById(id);
         if (!found) return false;
         saveStateForUndo();
-        console.info('[Storage] editSnippetById', id, newData);
+        console.debug('[Storage] editSnippetById', id, newData);
         Object.assign(found.item, newData);
-        console.info('[Storage] snippet before save:', JSON.parse(JSON.stringify(found.item)));
+        console.debug('[Storage] snippet before save:', JSON.parse(JSON.stringify(found.item)));
         save(true);
-        console.info('[Storage] snippet after save (in-memory):', JSON.parse(JSON.stringify(found.item)));
+        console.debug('[Storage] snippet after save (in-memory):', JSON.parse(JSON.stringify(found.item)));
         return true;
     }
 
@@ -619,7 +619,7 @@ const Storage = (() => {
                         } else {
                             throw new Error('No fs remove function available');
                         }
-                        console.info('[Storage] Removed orphan attachment:', file.rel);
+                        console.debug('[Storage] Removed orphan attachment:', file.rel);
                     } catch (remErr) {
                         console.warn('[Storage] Failed to remove attachment', file.rel, remErr);
                     }

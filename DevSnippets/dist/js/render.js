@@ -97,9 +97,26 @@ const Render = (() => {
         // Íconos Lucide
         if (typeof lucide !== 'undefined') lucide.createIcons({ node: container });
 
-        // Highlight.js
+        // Highlight.js: defer to idle/next frame to avoid doing heavy JS during paint
         if (typeof hljs !== 'undefined') {
-            document.querySelectorAll('pre code').forEach(b => hljs.highlightElement(b));
+            const highlightAll = () => document.querySelectorAll('pre code').forEach(b => {
+                try {
+                    const langClass = Array.from(b.classList).find(c => c.startsWith('language-'));
+                    if (!langClass || langClass === 'language-undefined') {
+                        b.classList.remove('language-undefined');
+                        b.classList.add('language-plaintext');
+                    }
+                    if (!b.dataset.highlighted) {
+                        hljs.highlightElement(b);
+                    }
+                } catch (err) { console.error('hljs highlightElement error', err); }
+            });
+            if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+                try { requestIdleCallback(highlightAll, { timeout: 300 }); }
+                catch (e) { requestAnimationFrame(highlightAll); }
+            } else {
+                requestAnimationFrame(highlightAll);
+            }
         }
 
         _updateStats(stats);

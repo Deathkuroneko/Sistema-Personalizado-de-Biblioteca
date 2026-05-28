@@ -125,7 +125,7 @@ const Attachments = (() => {
                 displayUrl = window.__TAURI__.core.convertFileSrc(absPath, 'asset');
             }
 
-            console.info('[Attachments] Imagen copiada a:', destPath);
+            console.debug('[Attachments] Imagen copiada a:', destPath);
             if (onSuccess) onSuccess({ relativePath: relPath, displayUrl });
 
         } catch (e) {
@@ -212,19 +212,19 @@ const Attachments = (() => {
                 const remover = fs.removeFile || fs.remove || fs.unlink;
                 if (typeof remover === 'function') {
                     await remover(destPath, { baseDir: BaseDirectory.Document });
-                    console.info('[Attachments] Imagen huérfana eliminada:', destPath);
+                    console.debug('[Attachments] Imagen huérfana eliminada:', destPath);
                 } else if (window.__TAURI__ && window.__TAURI__.tauri && window.__TAURI__.tauri.invoke) {
                     try {
                         await window.__TAURI__.tauri.invoke('plugin:fs|remove_file', { path: destPath, baseDir: BaseDirectory.Document });
-                        console.info('[Attachments] Imagen huérfana eliminada (invoke):', destPath);
+                        console.debug('[Attachments] Imagen huérfana eliminada (invoke):', destPath);
                     } catch (invErr) {
                         console.warn('[Attachments] invoke fallback failed for remove_file', invErr);
                     }
                 } else {
-                    console.info('[Attachments] Imagen no eliminada: ninguna API de borrado disponible');
+                    console.debug('[Attachments] Imagen no eliminada: ninguna API de borrado disponible');
                 }
             } else {
-                console.info(`[Attachments] Imagen no eliminada, está en uso por ${count} ficha(s):`, relativePath);
+                console.debug(`[Attachments] Imagen no eliminada, está en uso por ${count} ficha(s):`, relativePath);
             }
         } catch (e) {
             console.warn('[Attachments] No se pudo eliminar imagen huérfana:', e);

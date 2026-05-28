@@ -295,6 +295,10 @@ const Editor = (() => {
 
         const input = document.createElement('input');
         input.type        = 'text';
+        // Accessibility: minimal identifiers and label
+        try { input.id = `inline-${type}-${(tIdx!=null?Storage.getTitles()[tIdx].id:Date.now())}`; } catch(e) { input.id = `inline-${type}-${Date.now()}`; }
+        input.name = input.id;
+        input.setAttribute('aria-label', type === 'title' ? 'Editar título' : 'Editar texto');
         input.className   = 'inline-input';
         input.value       = isNew ? '' : original;
         input.placeholder = type === 'title' ? 'Ej: JavaScript, Anime, Videojuegos…' : 'Nombre…';
@@ -350,6 +354,9 @@ const Editor = (() => {
 
         const inputName = document.createElement('input');
         inputName.type        = 'text';
+        inputName.setAttribute('aria-label', 'Nombre de categoría');
+        inputName.id = `cat-name-${catObj.id || Date.now()}`;
+        inputName.name = inputName.id;
         inputName.className   = 'inline-input-sm';
         inputName.value       = isNew ? '' : catObj.title;
         inputName.placeholder = 'Ej: Model, Backend, API…';
@@ -357,6 +364,9 @@ const Editor = (() => {
 
         const sel = document.createElement('select');
         sel.className = 'inline-select';
+        sel.id = `cat-color-${catObj.id || Date.now()}`;
+        sel.name = sel.id;
+        sel.setAttribute('aria-label', 'Color de categoría');
         COLORS.forEach(c => {
             const opt = document.createElement('option');
             opt.value = c; opt.textContent = c.charAt(0).toUpperCase() + c.slice(1);
@@ -421,6 +431,9 @@ const Editor = (() => {
 
         const inputName = document.createElement('input');
         inputName.type        = 'text';
+        inputName.setAttribute('aria-label', 'Nombre del subtítulo');
+        inputName.id = `sub-name-${subObj.id || Date.now()}`;
+        inputName.name = inputName.id;
         inputName.className   = 'inline-input-sm';
         inputName.value       = isNew ? '' : subObj.title;
         inputName.placeholder = 'Nombre del subtítulo…';
@@ -428,6 +441,9 @@ const Editor = (() => {
 
         const selType = document.createElement('select');
         selType.className = 'inline-select';
+        selType.id = `sub-type-${subObj.id || Date.now()}`;
+        selType.name = selType.id;
+        selType.setAttribute('aria-label', 'Tipo de subtítulo');
         [['main', '⭐ Principal'], ['sec', '↳ Secundario']].forEach(([v, l]) => {
             const opt = document.createElement('option');
             opt.value = v; opt.textContent = l;
@@ -455,8 +471,8 @@ const Editor = (() => {
                 const row = document.createElement('div');
                 row.style.display = 'flex'; row.style.gap = '4px';
 
-                const selCat = document.createElement('select'); selCat.className = 'inline-select';
-                const selSub = document.createElement('select'); selSub.className = 'inline-select';
+                const selCat = document.createElement('select'); selCat.className = 'inline-select'; selCat.id = `assoc-cat-${subObj.id}-${idx}`; selCat.name = selCat.id; selCat.setAttribute('aria-label', 'Categoría asociada');
+                const selSub = document.createElement('select'); selSub.className = 'inline-select'; selSub.id = `assoc-sub-${subObj.id}-${idx}`; selSub.name = selSub.id; selSub.setAttribute('aria-label', 'Subtítulo asociado');
 
                 catsWithMain.forEach(c => {
                     const opt = document.createElement('option');
@@ -499,6 +515,7 @@ const Editor = (() => {
             btnAdd.className  = 'btn-icon';
             btnAdd.style.cssText = 'align-self:flex-start;font-size:0.8em;color:var(--primary)';
             btnAdd.innerHTML  = _icon('plus', 13) + ' Añadir Asociación';
+                btnAdd.setAttribute('aria-label', 'Añadir asociación');
             btnAdd.onclick = ev => {
                 ev.preventDefault(); ev.stopPropagation();
                 if (catsWithMain.length > 0) {

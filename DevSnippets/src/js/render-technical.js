@@ -50,20 +50,35 @@ const RenderTechnical = (() => {
         return `<button class="copy-btn" title="Copiar" onclick='App.copyCode(this, ${copyArg})'>${_icon('copy',14)}</button>`;
     }
 
-    function _collapseButton() {
-        return `<button class="copy-btn block-collapse-btn" title="Contraer/Expandir" onclick="(function(btn){ const wrapper = btn.closest('.code-block-wrapper, .text-block-wrapper'); if (!wrapper) return; wrapper.classList.toggle('block-collapsed-local'); btn.textContent = wrapper.classList.contains('block-collapsed-local') ? '+' : '-'; })(this)">-</button>`;
+    // In-memory temporary state for collapsed blocks per snippet (session only)
+    const _collapsedBlocks = Object.create(null);
+
+    function _setCollapsed(snippetId, blockIndex, value) {
+        if (!snippetId) return;
+        if (!_collapsedBlocks[snippetId]) _collapsedBlocks[snippetId] = Object.create(null);
+        _collapsedBlocks[snippetId][blockIndex] = !!value;
     }
 
-    function _renderSnippetBlock(block) {
+    function _isCollapsed(snippetId, blockIndex) {
+        return !!(_collapsedBlocks[snippetId] && _collapsedBlocks[snippetId][blockIndex]);
+    }
+
+    function _collapseButton(snippetId, blockIndex, isCollapsed) {
+        const label = isCollapsed ? '+' : '-';
+        return `<button class="copy-btn block-collapse-btn" title="Contraer/Expandir" onclick="RenderTechnical.toggleBlockCollapse('${snippetId}', ${blockIndex}, this)">${label}</button>`;
+    }
+
+    function _renderSnippetBlock(block, snippetId, blockIndex) {
         const fallbackTitle = block.type === 'code' ? 'Código' : 'Texto';
         const blockTitle = _escape(block.blockTitle || fallbackTitle);
         const escapedContent = _escape(block.content || '');
+        const collapsed = _isCollapsed(snippetId, blockIndex) ? ' block-collapsed-local' : '';
 
         if (block.type === 'code') {
-            return `<div class="code-block-wrapper">
+            return `<div class="code-block-wrapper${collapsed}">
                     <div class="block-header">
                         <div class="block-title">${blockTitle}</div>
-                        <div class="block-actions">${_copyButton(block.content || '')}${_collapseButton()}</div>
+                        <div class="block-actions">${_copyButton(block.content || '')}${_collapseButton(snippetId, blockIndex, !!collapsed)}</div>
                     </div>
                     <div class="code-block-body">
                         <div class="line-nums">${(block.content || '').split('\n').map((_, i) => i + 1).join('\n')}</div>
@@ -72,10 +87,10 @@ const RenderTechnical = (() => {
                </div>`;
         }
 
-        return `<div class="text-block-wrapper">
+        return `<div class="text-block-wrapper${collapsed}">
                     <div class="block-header">
                         <div class="block-title">${blockTitle}</div>
-                        <div class="block-actions">${_copyButton(block.content || '')}${_collapseButton()}</div>
+                        <div class="block-actions">${_copyButton(block.content || '')}${_collapseButton(snippetId, blockIndex, !!collapsed)}</div>
                     </div>
                     <div class="text-block">${escapedContent.replace(/\n/g, '<br>')}</div>
                </div>`;
@@ -323,7 +338,15 @@ const RenderTechnical = (() => {
         card.dataset.search = `${snipObj.title} ${snipObj.description} ${snipObj.code || ''} ${searchText}`.toLowerCase();
 
         const favCls = snipObj.fav ? 'active' : '';
-        const codeBlockHTML = blocks.map(_renderSnippetBlock).join('');
+
+        // Hydrate in-memory collapsed state from persistent snippet property if present
+        try {
+            if (snipObj && snipObj.collapsedBlocks && typeof snipObj.collapsedBlocks === 'object') {
+                _collapsedBlocks[snipObj.id] = Object.assign(Object.create(null), snipObj.collapsedBlocks);
+            }
+        } catch (e) { /* ignore */ }
+
+        const codeBlockHTML = blocks.map((b, i) => _renderSnippetBlock(b, snipObj.id, i)).join('');
 
         card.innerHTML = `
             <div class="snippet-view">
@@ -358,5 +381,27 @@ const RenderTechnical = (() => {
         return card;
     }
 
-    return { renderTitle };
+    // Toggle handler invoked from inline button; updates in-memory state and UI
+    function toggleBlockCollapse(snippetId, blockIndex, btn) {
+        try {
+            const wrapper = btn && btn.closest && btn.closest('.code-block-wrapper, .text-block-wrapper');
+            if (!wrapper) return;
+            const isNowCollapsed = wrapper.classList.toggle('block-collapsed-local');
+            btn.textContent = isNowCollapsed ? '+' : '-';
+            _setCollapsed(snippetId, blockIndex, isNowCollapsed);
+
+            // Persist minimal collapsedBlocks inside the snippet using existing Storage API
+            try {
+                const existing = (_collapsedBlocks[snippetId]) ? Object.assign({}, _collapsedBlocks[snippetId]) : {};
+                // Ensure keys are numeric strings or numbers as stored
+                Storage.editSnippetById(snippetId, { collapsedBlocks: existing });
+            } catch (e) {
+                console.warn('[RenderTechnical] failed to persist collapsedBlocks', e);
+            }
+        } catch (e) {
+            console.warn('[RenderTechnical] toggleBlockCollapse error', e);
+        }
+    }
+
+    return { renderTitle, toggleBlockCollapse };
 })();
