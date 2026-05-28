@@ -197,6 +197,149 @@ button {
     color: #6d28d9;
 }
 
+/* ── Galería técnica mínima ── */
+.tech-gallery {
+    position: fixed;
+    inset: 0;
+    z-index: 900;
+    display: none;
+}
+.tech-gallery.show {
+    display: block;
+}
+.tech-gallery-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.58);
+}
+.tech-gallery-panel {
+    position: absolute;
+    inset: 5vh 5vw;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+}
+.tech-gallery-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+}
+.tech-gallery-header h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+.tech-gallery-count {
+    display: block;
+    margin-top: 4px;
+    color: var(--text-subtle);
+    font-size: 12px;
+}
+.tech-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    padding: 14px;
+    overflow: auto;
+}
+.tech-gallery-thumb {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    overflow: hidden;
+    text-align: left;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+.tech-gallery-thumb:hover {
+    border-color: var(--primary);
+    background: var(--surface-hover);
+}
+.tech-gallery-thumb img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    background: var(--bg);
+}
+.tech-gallery-thumb span {
+    display: block;
+    padding: 8px 9px;
+    color: var(--text-muted);
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.tech-gallery-empty {
+    grid-column: 1 / -1;
+    display: grid;
+    place-items: center;
+    gap: 8px;
+    min-height: 220px;
+    color: var(--text-subtle);
+}
+.tech-gallery-empty p {
+    margin: 0;
+}
+.tech-gallery-preview {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 18px;
+    background: rgba(0, 0, 0, 0.82);
+}
+.tech-gallery-preview figure {
+    margin: 0;
+    min-width: 0;
+    max-height: 100%;
+    display: grid;
+    gap: 10px;
+    justify-items: center;
+}
+.tech-gallery-preview-img {
+    max-width: 100%;
+    max-height: calc(90vh - 120px);
+    object-fit: contain;
+    border-radius: 8px;
+}
+.tech-gallery-preview figcaption {
+    display: grid;
+    gap: 4px;
+    color: #fff;
+    text-align: center;
+}
+.tech-gallery-preview-desc {
+    color: rgba(255,255,255,0.72);
+    font-size: 13px;
+}
+.tech-gallery-close-preview {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    color: #fff;
+}
+.tech-gallery-nav {
+    color: #fff;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+}
+.tech-gallery-nav:hover,
+.tech-gallery-close-preview:hover {
+    background: rgba(255,255,255,0.16);
+    color: #fff;
+}
+
 /* ── Dropdown Contextual ── */
 .dropdown { position: relative; display: inline-block; }
 
