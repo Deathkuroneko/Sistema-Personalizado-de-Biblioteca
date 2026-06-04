@@ -198,8 +198,13 @@ const Storage = (() => {
 
     // runCleanup=false por defecto: el scan de archivos huérfanos solo ocurre
     // en guardados explícitos del usuario, no en cada operación CRUD (P-03).
-    async function save(reRender = true, runCleanup = false) {
-        if (reRender && typeof Render !== 'undefined') Render.render();
+    async function save(reRender = true, runCleanup = false, refreshGallery = false) {
+        if (reRender && typeof Render !== 'undefined') {
+            Render.render();
+        }
+        if (refreshGallery && typeof GalleryTech !== 'undefined') {
+            GalleryTech.refresh();
+        }
         try {
             await _persist();
             if (runCleanup) {
@@ -221,7 +226,7 @@ const Storage = (() => {
         if (_undoStack.length === 0) return false;
         _redoStack.push(JSON.stringify(_db));
         _db = JSON.parse(_undoStack.pop());
-        save(true);
+        save(true, false, true);
         return true;
     }
 
@@ -229,7 +234,7 @@ const Storage = (() => {
         if (_redoStack.length === 0) return false;
         _undoStack.push(JSON.stringify(_db));
         _db = JSON.parse(_redoStack.pop());
-        save(true);
+        save(true, false, true);
         return true;
     }
 
@@ -281,7 +286,7 @@ const Storage = (() => {
                 rootObj.titles = titles;
                 if (!Array.isArray(rootObj.tags)) rootObj.tags = [];
                 _db = rootObj;
-                save(true);
+                save(true, false, true);
                 if (onSuccess) onSuccess();
             } catch (err) {
                 if (onError) onError(err);
@@ -444,7 +449,8 @@ const Storage = (() => {
         console.debug('[Storage] editSnippetById', id, newData);
         Object.assign(found.item, newData);
         console.debug('[Storage] snippet before save:', JSON.parse(JSON.stringify(found.item)));
-        save(true);
+        const refreshGallery = ('coverImage' in newData || 'title' in newData || 'description' in newData);
+        save(true, false, refreshGallery);
         console.debug('[Storage] snippet after save (in-memory):', JSON.parse(JSON.stringify(found.item)));
         return true;
     }
@@ -456,7 +462,7 @@ const Storage = (() => {
         saveStateForUndo();
         try { if (typeof Drafts !== 'undefined' && Drafts.discard) Drafts.discard(id); } catch (e) { }
         _db.titles[tIdx].categories[cIdx].subtitles[sIdx].snippets.splice(snIdx, 1);
-        save(true);
+        save(true, false, true);
         return true;
     }
 
@@ -515,7 +521,7 @@ const Storage = (() => {
         const { tIdx, cIdx } = found;
         saveStateForUndo();
         _db.titles[tIdx].categories.splice(cIdx, 1);
-        save(true);
+        save(true, false, true);
         return true;
     }
 
@@ -534,7 +540,7 @@ const Storage = (() => {
         const { tIdx, cIdx, sIdx } = found;
         saveStateForUndo();
         _db.titles[tIdx].categories[cIdx].subtitles.splice(sIdx, 1);
-        save(true);
+        save(true, false, true);
         return true;
     }
 
@@ -553,7 +559,7 @@ const Storage = (() => {
         const { tIdx } = found;
         saveStateForUndo();
         _db.titles.splice(tIdx, 1);
-        save(true);
+        save(true, false, true);
         return true;
     }
 
@@ -570,7 +576,17 @@ const Storage = (() => {
                 const normalized = v.replace(/\\/g, '/');
                 const idx = normalized.indexOf('attachments/');
                 const ref = normalized.slice(idx);
-                if (ref) set.add(ref);
+                if (ref) {
+                    set.add(ref);
+                    // Proteger también el thumbnail asociado
+                    const lastSlash = ref.lastIndexOf('/');
+                    const lastDot = ref.lastIndexOf('.');
+                    if (lastSlash >= 0 && lastDot > lastSlash) {
+                        const dir = ref.substring(0, lastSlash);
+                        const name = ref.substring(lastSlash + 1, lastDot);
+                        set.add(`${dir}/thumb/${name}_thumb.jpg`);
+                    }
+                }
             } else if (typeof v === 'object' && v !== null) {
                 _collectAttachmentRefsFromObj(v, set);
             }

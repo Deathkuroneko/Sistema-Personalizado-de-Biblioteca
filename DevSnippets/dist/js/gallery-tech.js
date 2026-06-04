@@ -1,11 +1,19 @@
 /**
  * gallery-tech.js — Galería mínima para imágenes de snippets técnicos.
+ *
+ * Ciclo de vida:
+ *   GalleryTech.init()     — llamar UNA vez al arrancar la app (pre-carga el índice).
+ *   GalleryTech.refresh()  — llamar tras cualquier CRUD que afecte imágenes de portada.
+ *   GalleryTech.open()     — abre el modal leyendo el caché ya calculado (instantáneo).
  */
 
 const GalleryTech = (() => {
     let _items = [];
     let _index = 0;
     let _root = null;
+    let _dirty = true;
+    let _rafId = null;
+    let _observer = null;
 
     function _escape(text = '') {
         return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -29,8 +37,14 @@ const GalleryTech = (() => {
                             ? Attachments.getDisplayUrl(snip.coverImage)
                             : snip.coverImage;
                         if (!url) return;
+                        
+                        const thumbUrl = typeof Attachments !== 'undefined' && Attachments.getThumbnailUrl
+                            ? Attachments.getThumbnailUrl(snip.coverImage)
+                            : url;
+
                         out.push({
                             url,
+                            thumbUrl,
                             title: snip.title || '(Sin título)',
                             description: snip.description || '',
                             path: snip.coverImage,
@@ -78,15 +92,51 @@ const GalleryTech = (() => {
             if (event.target && event.target.dataset && event.target.dataset.galleryClose) close();
         });
         document.body.appendChild(_root);
+        if (typeof lucide !== 'undefined') lucide.createIcons({ node: _root });
         return _root;
     }
 
+    function _initObserver() {
+        if (_observer) _observer.disconnect();
+        const grid = _root.querySelector('.tech-gallery-grid');
+        _observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    if (img.dataset.src) {
+                        img.onerror = function() {
+                            this.onerror = null;
+                            if (this.dataset.originalUrl) {
+                                this.src = this.dataset.originalUrl;
+                            }
+                        };
+                        img.src = img.dataset.src;
+                        img.removeAttribute('data-src');
+                        _observer.unobserve(img);
+                    }
+                }
+            });
+        }, {
+            root: grid,
+            rootMargin: '250px',
+            threshold: 0
+        });
+    }
+
     function _renderGrid() {
+        if (!_dirty) return;
+        if (_rafId) {
+            cancelAnimationFrame(_rafId);
+            _rafId = null;
+        }
+
         const root = _ensureRoot();
         const countEl = root.querySelector('.tech-gallery-count');
         const grid = root.querySelector('.tech-gallery-grid');
         countEl.textContent = `${_items.length} imagen${_items.length === 1 ? '' : 'es'}`;
         grid.innerHTML = '';
+        
+        _initObserver();
 
         if (!_items.length) {
             grid.innerHTML = `
@@ -95,23 +145,54 @@ const GalleryTech = (() => {
                     <p>No hay imágenes técnicas guardadas.</p>
                 </div>
             `;
-            if (typeof lucide !== 'undefined') lucide.createIcons({ node: grid });
+            _dirty = false;
             return;
         }
 
-        _items.forEach((item, idx) => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'tech-gallery-thumb';
-            btn.title = item.title;
-            btn.innerHTML = `
-                <img alt="${_escape(item.title)}">
-                <span>${_escape(item.title)}</span>
-            `;
-            btn.querySelector('img').src = item.url;
-            btn.addEventListener('click', () => openPreview(idx));
-            grid.appendChild(btn);
-        });
+        let i = 0;
+        const BATCH_SIZE = 20;
+
+        function renderBatch() {
+            const fragment = document.createDocumentFragment();
+            const end = Math.min(i + BATCH_SIZE, _items.length);
+
+            for (; i < end; i++) {
+                const item = _items[i];
+                const idx = i;
+
+                const btn = document.createElement('div');
+                btn.className = 'tech-gallery-thumb';
+                btn.role = 'button';
+                btn.tabIndex = 0;
+                btn.title = item.title;
+
+                const img = document.createElement('img');
+                img.alt = _escape(item.title);
+                img.dataset.src = item.thumbUrl || item.url;
+                img.dataset.originalUrl = item.url;
+
+                const label = document.createElement('span');
+                label.textContent = item.title;
+
+                btn.appendChild(img);
+                btn.appendChild(label);
+                btn.addEventListener('click', () => openPreview(idx));
+                fragment.appendChild(btn);
+                
+                _observer.observe(img);
+            }
+
+            grid.appendChild(fragment);
+
+            if (i < _items.length) {
+                _rafId = requestAnimationFrame(renderBatch);
+            } else {
+                _dirty = false;
+                _rafId = null;
+            }
+        }
+
+        _rafId = requestAnimationFrame(renderBatch);
     }
 
     function _onKeydown(event) {
@@ -124,15 +205,44 @@ const GalleryTech = (() => {
         if (event.key === 'ArrowRight') next();
     }
 
-    function open() {
+    /**
+     * Pre-carga el índice de imágenes en memoria.
+     * Debe llamarse una sola vez cuando la app termina de inicializar Storage.
+     */
+    function init() {
         _items = _collectItems();
+        _dirty = true;
+    }
+
+    /**
+     * Re-indexa el caché tras una operación CRUD (crear/editar/borrar snippet).
+     * Si la galería está abierta, actualiza la cuadrícula en tiempo real.
+     */
+    function refresh() {
+        _items = _collectItems();
+        _dirty = true;
+        if (_root && _root.classList.contains('show')) {
+            _renderGrid();
+            if (typeof lucide !== 'undefined') lucide.createIcons({ node: _root });
+        }
+    }
+
+    /**
+     * Abre el modal leyendo el caché pre-cargado por init() / refresh().
+     * Si por alguna razón el caché está vacío (p. ej. init() no se llamó aún),
+     * lo recopila de forma diferida como fallback seguro.
+     */
+    function open() {
+        if (!_items.length) {
+            _items = _collectItems();
+            _dirty = true;
+        }
         _index = 0;
         const root = _ensureRoot();
         _renderGrid();
         closePreview();
         root.classList.add('show');
         document.addEventListener('keydown', _onKeydown);
-        if (typeof lucide !== 'undefined') lucide.createIcons({ node: root });
     }
 
     function close() {
@@ -169,5 +279,5 @@ const GalleryTech = (() => {
         openPreview(_index - 1);
     }
 
-    return { open, close, openPreview, closePreview, next, prev };
+    return { init, refresh, open, close, openPreview, closePreview, next, prev };
 })();

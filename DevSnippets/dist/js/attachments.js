@@ -43,12 +43,38 @@ const Attachments = (() => {
         if (relativePath.startsWith('data:')) return relativePath;
 
         if (_isTauri() && window.__TAURI__.core && window.__TAURI__.core.convertFileSrc && _docDirPath) {
-            const absPath = `${_docDirPath}DevSnippets\\${relativePath}`;
+            const absPath = `${_docDirPath}DevSnippets\\${relativePath.replace(/\//g, '\\')}`;
             return window.__TAURI__.core.convertFileSrc(absPath, 'asset');
         }
 
-        // Fallback: si no hay Tauri, devolver null (no hay forma de resolver)
         return null;
+    }
+
+    /**
+     * Devuelve la URL del thumbnail de una imagen almacenada.
+     * Muta el relativePath para apuntar a _thumb.jpg.
+     */
+    function getThumbnailUrl(relativePath) {
+        if (!relativePath) return null;
+        if (relativePath.startsWith('data:') || relativePath.startsWith('blob:')) return relativePath;
+
+        if (_isTauri() && window.__TAURI__.core && window.__TAURI__.core.convertFileSrc && _docDirPath) {
+            const lastSlash = relativePath.lastIndexOf('/');
+            const lastDot = relativePath.lastIndexOf('.');
+            
+            let thumbRel = relativePath;
+            if (lastSlash >= 0 && lastDot > lastSlash) {
+                const dir = relativePath.substring(0, lastSlash);
+                const name = relativePath.substring(lastSlash + 1, lastDot);
+                thumbRel = `${dir}/thumb/${name}_thumb.jpg`;
+            } else if (lastDot > 0) {
+                thumbRel = relativePath.substring(0, lastDot) + '_thumb.jpg';
+            }
+            const absPath = `${_docDirPath}DevSnippets\\${thumbRel.replace(/\//g, '\\')}`;
+            return window.__TAURI__.core.convertFileSrc(absPath, 'asset');
+        }
+
+        return relativePath; // fallback
     }
 
     function _normalizeAttachmentType(type) {
@@ -95,8 +121,53 @@ const Attachments = (() => {
     }
 
     /**
+     * Genera un thumbnail (JPEG 85%) usando Canvas de HTML5.
+     * @param {File} file - El archivo original
+     * @param {number} maxSize - Tamaño máximo para ancho o alto
+     * @returns {Promise<Blob>}
+     */
+    async function _generateThumbnail(file, maxSize = 256) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > maxSize) {
+                            height = Math.round((height * maxSize) / width);
+                            width = maxSize;
+                        }
+                    } else {
+                        if (height > maxSize) {
+                            width = Math.round((width * maxSize) / height);
+                            height = maxSize;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    canvas.toBlob(blob => {
+                        if (blob) resolve(blob);
+                        else reject(new Error('Canvas toBlob falló'));
+                    }, 'image/jpeg', 0.85);
+                };
+                img.onerror = () => reject(new Error('Error cargando imagen para thumbnail'));
+                img.src = e.target.result;
+            };
+            reader.onerror = () => reject(new Error('Error leyendo archivo para thumbnail'));
+            reader.readAsDataURL(file);
+        });
+    }
+
+    /**
      * Copia el archivo a Documents/DevSnippets/attachments/{media|technical}/
-     * usando el plugin tauri-plugin-fs.
+     * usando el plugin tauri-plugin-fs. Genera también un _thumb.jpg.
      */
     async function _copyToAttachments(file, cardId, type, onSuccess, onError) {
         try {
@@ -107,16 +178,35 @@ const Attachments = (() => {
             const ext      = file.name.split('.').pop().toLowerCase();
             const uniqueId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now();
             const safeName = `${cardId}_${uniqueId}.${ext}`;
+            // Construir rutas de guardado
             const relPath  = `attachments/${attachmentType}/${safeName}`;
             const destPath = `DevSnippets/${relPath}`;
+            
+            // Ruta del thumbnail (en subcarpeta /thumb/)
+            const thumbName = `${cardId}_${uniqueId}_thumb.jpg`;
+            const thumbRelPath = `attachments/${attachmentType}/thumb/${thumbName}`;
+            const thumbDestPath = `DevSnippets/${thumbRelPath}`;
 
-            // Leer el archivo como ArrayBuffer y escribirlo
+            // Leer el archivo como ArrayBuffer y escribir original
             const buffer = await file.arrayBuffer();
             const { writeFile, mkdir, BaseDirectory: BD } = window.__TAURI__.fs;
             if (typeof mkdir === 'function') {
                 await mkdir(`DevSnippets/attachments/${attachmentType}`, { baseDir: BD.Document, recursive: true });
             }
             await writeFile(destPath, new Uint8Array(buffer), { baseDir: BD.Document });
+
+            // Generar y escribir thumbnail de forma segura (no rompe si falla)
+            try {
+                const thumbBlob = await _generateThumbnail(file, 256);
+                const thumbBuffer = await thumbBlob.arrayBuffer();
+                if (typeof mkdir === 'function') {
+                    await mkdir(`DevSnippets/attachments/${attachmentType}/thumb`, { baseDir: BD.Document, recursive: true });
+                }
+                await writeFile(thumbDestPath, new Uint8Array(thumbBuffer), { baseDir: BD.Document });
+                console.debug('[Attachments] Thumbnail guardado:', thumbDestPath);
+            } catch (thumbErr) {
+                console.error('[Attachments] No se pudo crear el thumbnail:', thumbErr);
+            }
 
             // Construir URL de visualización
             let displayUrl = null;
@@ -209,13 +299,29 @@ const Attachments = (() => {
                 const fs = window.__TAURI__.fs;
                 const { BaseDirectory } = fs;
                 const destPath = `DevSnippets/${relativePath}`;
+                
+                const lastSlash = relativePath.lastIndexOf('/');
+                const lastDot = relativePath.lastIndexOf('.');
+                
+                let thumbRel = relativePath;
+                if (lastSlash >= 0 && lastDot > lastSlash) {
+                    const dir = relativePath.substring(0, lastSlash);
+                    const name = relativePath.substring(lastSlash + 1, lastDot);
+                    thumbRel = `${dir}/thumb/${name}_thumb.jpg`;
+                } else if (lastDot > 0) {
+                    thumbRel = relativePath.substring(0, lastDot) + '_thumb.jpg';
+                }
+                const thumbDestPath = `DevSnippets/${thumbRel}`;
+
                 const remover = fs.removeFile || fs.remove || fs.unlink;
                 if (typeof remover === 'function') {
                     await remover(destPath, { baseDir: BaseDirectory.Document });
+                    try { await remover(thumbDestPath, { baseDir: BaseDirectory.Document }); } catch (e) {}
                     console.debug('[Attachments] Imagen huérfana eliminada:', destPath);
                 } else if (window.__TAURI__ && window.__TAURI__.tauri && window.__TAURI__.tauri.invoke) {
                     try {
                         await window.__TAURI__.tauri.invoke('plugin:fs|remove_file', { path: destPath, baseDir: BaseDirectory.Document });
+                        try { await window.__TAURI__.tauri.invoke('plugin:fs|remove_file', { path: thumbDestPath, baseDir: BaseDirectory.Document }); } catch (e) {}
                         console.debug('[Attachments] Imagen huérfana eliminada (invoke):', destPath);
                     } catch (invErr) {
                         console.warn('[Attachments] invoke fallback failed for remove_file', invErr);
@@ -235,6 +341,7 @@ const Attachments = (() => {
         init,
         selectAndCopy,
         getDisplayUrl,
+        getThumbnailUrl,
         resolveImageUrl,
         removeImage,
     };

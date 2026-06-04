@@ -243,40 +243,60 @@ button {
 }
 .tech-gallery-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    align-content: start;
     gap: 10px;
     padding: 14px;
-    overflow: auto;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 .tech-gallery-thumb {
     display: block;
-    min-width: 0;
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    margin: 0;
     padding: 0;
+    cursor: pointer;
     overflow: hidden;
     text-align: left;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 8px;
+    box-sizing: border-box;
 }
 .tech-gallery-thumb:hover {
     border-color: var(--primary);
     background: var(--surface-hover);
 }
 .tech-gallery-thumb img {
-    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
-    aspect-ratio: 4 / 3;
+    height: calc(100% - 32px);
     object-fit: cover;
     background: var(--bg);
 }
 .tech-gallery-thumb span {
-    display: block;
-    padding: 8px 9px;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 32px;
+    line-height: 32px;
+    padding: 0 8px;
     color: var(--text-muted);
     font-size: 12px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    box-sizing: border-box;
+    background: var(--surface);
 }
 .tech-gallery-empty {
     grid-column: 1 / -1;

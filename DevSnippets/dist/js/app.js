@@ -21,6 +21,7 @@ const App = (() => {
         Sidebar.init();
         _wrapSearchFilter();
         Render.render();
+        if (typeof GalleryTech !== 'undefined') GalleryTech.init();
         _bindGlobalEvents();
         _syncTypeFilterButtons();
     }
