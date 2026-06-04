@@ -49,27 +49,9 @@ const App = (() => {
         localStorage.setItem(THEME_KEY, next);
         _updateThemeBtn(next);
 
-        // Highlight.js: defer re-coloring to idle/next frame to avoid blocking paint
-        if (typeof hljs !== 'undefined') {
-            const highlightAll = () => document.querySelectorAll('pre code').forEach(b => {
-                try {
-                    const langClass = Array.from(b.classList).find(c => c.startsWith('language-'));
-                    if (!langClass || langClass === 'language-undefined') {
-                        b.classList.remove('language-undefined');
-                        b.classList.add('language-plaintext');
-                    }
-                    if (!b.dataset.highlighted) {
-                        hljs.highlightElement(b);
-                    }
-                } catch (err) { console.error('hljs highlightElement error', err); }
-            });
-            if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-                try { requestIdleCallback(highlightAll, { timeout: 300 }); }
-                catch (e) { requestAnimationFrame(highlightAll); }
-            } else {
-                requestAnimationFrame(highlightAll);
-            }
-        }
+        // hljs usa temas CSS — el cambio se aplica automáticamente al atributo data-theme.
+        // El observer de Render garantiza el resaltado de bloques aún no visibles (P-02).
+        if (typeof Render !== 'undefined') Render.observeCodeBlocks();
     }
 
     // ── Dropdowns ─────────────────────────────────────────────

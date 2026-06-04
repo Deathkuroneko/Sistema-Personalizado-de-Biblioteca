@@ -15,6 +15,37 @@
 const Render = (() => {
     const OPEN_KEY = 'devSnippets_openStates';
 
+    // ── Lazy highlight con IntersectionObserver (P-02) ────────
+    let _hljsObserver = null;
+
+    function _getHljsObserver() {
+        if (_hljsObserver) return _hljsObserver;
+        if (typeof hljs === 'undefined' || typeof IntersectionObserver === 'undefined') return null;
+        _hljsObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                const block = entry.target;
+                _hljsObserver.unobserve(block);
+                if (block.dataset.highlighted) return;
+                const langClass = Array.from(block.classList).find(c => c.startsWith('language-'));
+                if (!langClass || langClass === 'language-undefined') {
+                    block.classList.remove('language-undefined');
+                    block.classList.add('language-plaintext');
+                }
+                try { hljs.highlightElement(block); } catch (err) { console.error('[hljs] error', err); }
+            });
+        }, { rootMargin: '200px 0px' });
+        return _hljsObserver;
+    }
+
+    function _observeCodeBlocks(container) {
+        const observer = _getHljsObserver();
+        if (!observer) return;
+        (container || document).querySelectorAll('pre code').forEach(block => {
+            if (!block.dataset.highlighted) observer.observe(block);
+        });
+    }
+
     // ── Estado de acordeones ──────────────────────────────────
     function saveOpenStates() {
         const ids = [...document.querySelectorAll('details[open][id]')].map(d => d.id);
@@ -52,15 +83,17 @@ const Render = (() => {
         const titles    = Storage.getTitles();
         const openSet   = _getOpenSet();
         const container = document.getElementById('app-container');
+        // Desconectar observer antes de destruir nodos (P-02)
+        if (_hljsObserver) _hljsObserver.disconnect();
         container.innerHTML = '';
 
         // Estadísticas acumuladas
         const stats = {
             titles:      titles.length,
-            // técnico
-            cats: 0, subs: 0, snips: 0,
-            // media
-            collections: 0, cards: 0,
+            // técnico (P-06)
+            techTitles: 0, cats: 0, subs: 0, snips: 0,
+            // media (P-06)
+            mediaTitles: 0, collections: 0, cards: 0,
         };
 
         if (titles.length === 0) {
@@ -78,11 +111,13 @@ const Render = (() => {
 
             if (titleObj.type === 'media') {
                 ({ el, stats: typeStats } = RenderMedia.renderTitle(titleObj, tIdx, openSet, _makeDetails));
+                stats.mediaTitles++; // P-06
                 stats.collections += typeStats.collections;
                 stats.cards       += typeStats.cards;
             } else {
                 // default: technical
                 ({ el, stats: typeStats } = RenderTechnical.renderTitle(titleObj, tIdx, openSet, _makeDetails));
+                stats.techTitles++; // P-06
                 stats.cats  += typeStats.cats;
                 stats.subs  += typeStats.subs;
                 stats.snips += typeStats.snips;
@@ -97,27 +132,8 @@ const Render = (() => {
         // Íconos Lucide
         if (typeof lucide !== 'undefined') lucide.createIcons({ node: container });
 
-        // Highlight.js: defer to idle/next frame to avoid doing heavy JS during paint
-        if (typeof hljs !== 'undefined') {
-            const highlightAll = () => document.querySelectorAll('pre code').forEach(b => {
-                try {
-                    const langClass = Array.from(b.classList).find(c => c.startsWith('language-'));
-                    if (!langClass || langClass === 'language-undefined') {
-                        b.classList.remove('language-undefined');
-                        b.classList.add('language-plaintext');
-                    }
-                    if (!b.dataset.highlighted) {
-                        hljs.highlightElement(b);
-                    }
-                } catch (err) { console.error('hljs highlightElement error', err); }
-            });
-            if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-                try { requestIdleCallback(highlightAll, { timeout: 300 }); }
-                catch (e) { requestAnimationFrame(highlightAll); }
-            } else {
-                requestAnimationFrame(highlightAll);
-            }
-        }
+        // Highlight.js: lazy highlight via IntersectionObserver (P-02)
+        _observeCodeBlocks(container);
 
         _updateStats(stats);
         Sidebar.render();
@@ -175,12 +191,14 @@ const Render = (() => {
         if (!stats) {
             // Recalcular desde cero
             const titles = Storage.getTitles();
-            stats = { titles: titles.length, cats: 0, subs: 0, snips: 0, collections: 0, cards: 0 };
+            stats = { titles: titles.length, techTitles: 0, mediaTitles: 0, cats: 0, subs: 0, snips: 0, collections: 0, cards: 0 };
             titles.forEach(t => {
                 if (t.type === 'media') {
+                    stats.mediaTitles++;
                     stats.collections += (t.collections || []).length;
                     (t.collections || []).forEach(c => { stats.cards += (c.cards || []).length; });
                 } else {
+                    stats.techTitles++;
                     stats.cats += (t.categories || []).length;
                     (t.categories || []).forEach(c => {
                         stats.subs += (c.subtitles || []).length;
@@ -193,8 +211,9 @@ const Render = (() => {
         const bar = document.getElementById('stats-bar');
         if (!bar) return;
 
-        const techTitles = document.querySelectorAll('.title-card[data-type="technical"]').length;
-        const mediaTitles = document.querySelectorAll('.title-card[data-type="media"]').length;
+        // P-06: leer contadores del stats acumulado, sin tocar el DOM
+        const techTitles  = stats.techTitles  || 0;
+        const mediaTitles = stats.mediaTitles || 0;
         const metric = (value, label) => `<span class="metric-pill"><b>${value}</b><span>${label}</span></span>`;
         const group = (type, label, metrics) => `
             <span class="metric-group metric-group--${type}">
@@ -221,5 +240,5 @@ const Render = (() => {
         bar.innerHTML = parts.length ? parts.join('<span class="metric-separator" aria-hidden="true"></span>') : metric(stats.titles, 'Títulos');
     }
 
-    return { render, saveOpenStates };
+    return { render, saveOpenStates, observeCodeBlocks: _observeCodeBlocks };
 })();
