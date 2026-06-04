@@ -196,12 +196,15 @@ const Storage = (() => {
         }
     }
 
-    async function save(reRender = true) {
+    // runCleanup=false por defecto: el scan de archivos huérfanos solo ocurre
+    // en guardados explícitos del usuario, no en cada operación CRUD (P-03).
+    async function save(reRender = true, runCleanup = false) {
         if (reRender && typeof Render !== 'undefined') Render.render();
         try {
             await _persist();
-            // After persisting to disk, attempt a safe cleanup of orphan attachments (Tauri only)
-            try { await cleanupAttachments(); } catch (e) { console.warn('[Storage] cleanupAttachments failed:', e); }
+            if (runCleanup) {
+                try { await cleanupAttachments(); } catch (e) { console.warn('[Storage] cleanupAttachments failed:', e); }
+            }
         } catch (e) {
             if (typeof App !== 'undefined') App.showToast('Error al guardar: ' + e.message, false);
         }

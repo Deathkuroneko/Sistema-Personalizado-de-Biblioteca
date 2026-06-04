@@ -83,6 +83,14 @@ const Render = (() => {
         const titles    = Storage.getTitles();
         const openSet   = _getOpenSet();
         const container = document.getElementById('app-container');
+        // Destruir instancias Sortable antes de limpiar el DOM (P-08)
+        if (typeof Sortable !== 'undefined') {
+            const sortableSelectors = '.title-body, .cat-body, .sub-body, .media-col-body, .media-cards-grid';
+            [container, ...container.querySelectorAll(sortableSelectors)].forEach(el => {
+                const s = Sortable.get(el);
+                if (s) s.destroy();
+            });
+        }
         // Desconectar observer antes de destruir nodos (P-02)
         if (_hljsObserver) _hljsObserver.disconnect();
         container.innerHTML = '';

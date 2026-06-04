@@ -158,7 +158,7 @@ const App = (() => {
     // ── Export / Import / Save ────────────────────────────────
     async function saveManual() {
         try {
-            await Storage.save(false);
+            await Storage.save(false, true); // runCleanup=true: único punto de limpieza de adjuntos (P-03)
             showToast('Guardado correctamente.', false);
         } catch (e) {
             showToast('Error al guardar.', false);

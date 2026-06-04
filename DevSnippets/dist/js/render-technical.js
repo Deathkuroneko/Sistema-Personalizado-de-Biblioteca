@@ -232,6 +232,7 @@ const RenderTechnical = (() => {
     function _renderSubtitle(subObj, tIdx, cIdx, sIdx, openSet, makeDetails, stats) {
         const sEl = makeDetails(`s_${subObj.id}`, openSet, 'sub-card');
         sEl.setAttribute('data-id', subObj.id);
+        sEl.setAttribute('data-search', subObj.title.toLowerCase()); // P-04: evita innerText en search.js
 
         // Asociaciones
         let assocHTML = '';
@@ -361,7 +362,7 @@ const RenderTechnical = (() => {
                         </h4>
                         ${snipObj.description ? `<p class="snippet-desc">${_escape(snipObj.description)}</p>` : ''}
                     </div>
-                    ${ (snipObj.coverImage && typeof Attachments !== 'undefined') ? (function(){ const url = Attachments.getDisplayUrl(snipObj.coverImage); return url ? `<div class="snippet-thumbnail" onclick="ViewMedia.openImage('${url.replace(/'/g, "\\'")}', '${_escape(snipObj.title||'')}')"><img src="${url}" alt="thumbnail"></div>` : ''; })() : '' }
+                    ${ (snipObj.coverImage && typeof Attachments !== 'undefined') ? (function(){ const url = Attachments.getDisplayUrl(snipObj.coverImage); return url ? `<div class="snippet-thumbnail" onclick="ViewMedia.openImage('${url.replace(/'/g, "\\'")}', '${_escape(snipObj.title||'')}')"><img src="${url}" alt="thumbnail" loading="lazy"></div>` : ''; })() : '' }
                     <div style="display:flex;align-items:center;gap:4px;">
                         <button class="drag-handle btn-icon" title="Arrastrar para reordenar">
                             ${_icon('grip-vertical', 15)}

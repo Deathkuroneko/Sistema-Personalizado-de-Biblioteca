@@ -11,6 +11,8 @@ const Sidebar = (() => {
     const COLLAPSED_KEY  = 'devSnippets_sidebar';
     const EXPANDED_KEY   = 'devSnippets_sidebarExpanded';
 
+    let _activeNavEl = null; // P-09: referencia directa al elemento activo
+
     const COLOR_DOT = {
         blue: '#1f6feb', green: '#238636', red: '#da3633', purple: '#8957e5',
         yellow: '#d29922', cyan: '#388bfd', orange: '#bd561d', gray: '#6e7681',
@@ -261,9 +263,10 @@ const Sidebar = (() => {
     }
 
     function _setActive(navId) {
-        document.querySelectorAll('.nav-title-item, .nav-cat-item, .nav-sub-item').forEach(el => el.classList.remove('nav-active'));
-        const target = document.querySelector(`[data-nav-id="${navId}"]`);
-        if (target) target.classList.add('nav-active');
+        // P-09: limpiar solo el elemento anterior, sin recorrer todos los nodos
+        if (_activeNavEl) _activeNavEl.classList.remove('nav-active');
+        _activeNavEl = document.querySelector(`[data-nav-id="${navId}"]`);
+        if (_activeNavEl) _activeNavEl.classList.add('nav-active');
     }
 
     function _icon(name, size = 16) { return `<svg data-lucide="${name}" width="${size}" height="${size}" style="flex-shrink:0"></svg>`; }

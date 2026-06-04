@@ -171,9 +171,12 @@ const RenderMedia = (() => {
         const grid = document.createElement('div');
         grid.className = 'media-cards-grid';
 
+        // P-12: construir Map de tags una vez por colección, evita Array.find por cada tarjeta
+        const tagMap = new Map(Storage.getTags().map(t => [t.id, t]));
+
         (colObj.cards || []).forEach((cardObj, cardIdx) => {
             stats.cards++;
-            const cardEl = _buildCard(cardObj, tIdx, colIdx, cardIdx);
+            const cardEl = _buildCard(cardObj, tIdx, colIdx, cardIdx, tagMap);
             grid.appendChild(cardEl);
         });
 
@@ -211,14 +214,16 @@ const RenderMedia = (() => {
     }
 
     // ── RENDER FICHA / CARD ───────────────────────────────────
-    function _buildCard(cardObj, tIdx, colIdx, cardIdx) {
+    function _buildCard(cardObj, tIdx, colIdx, cardIdx, tagMap) {
         const wrapper = document.createElement('div');
         wrapper.className  = 'media-card';
         wrapper.dataset.id = cardObj.id;
+        // P-12: usar tagMap (O(1)) en lugar de Storage.findTagById (Array.find)
+        const _findTag = tagMap ? (id => tagMap.get(id) || null) : (id => Storage.findTagById(id));
         wrapper.dataset.search = [
             cardObj.title, cardObj.altTitle, cardObj.synopsis,
             cardObj.studio, cardObj.status,
-            (cardObj.tags || []).map(id => { const t = Storage.findTagById(id); return t ? t.name : ''; }).join(' ')
+            (cardObj.tags || []).map(id => { const t = _findTag(id); return t ? t.name : ''; }).join(' ')
         ].join(' ').toLowerCase();
 
         // Portada

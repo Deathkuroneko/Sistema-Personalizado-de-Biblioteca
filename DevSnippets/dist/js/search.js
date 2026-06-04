@@ -62,13 +62,15 @@ const Search = (() => {
                 const cats = tNode.querySelectorAll('.cat-card[data-id]');
                 cats.forEach(cNode => {
                     let catVisible = false;
-                    const catText  = cNode.querySelector('.summary-text')?.innerText.toLowerCase() || '';
+                    // P-04: data-search evita innerText + reflow en cada tecla
+                    const catText = cNode.dataset.search || '';
                     const catMatch = catText.includes(_query);
 
                     const subs = cNode.querySelectorAll('.sub-card[data-id]');
                     subs.forEach(sNode => {
                         let subVisible = false;
-                        const subText  = sNode.querySelector('.sub-name')?.innerText.toLowerCase() || '';
+                        // P-04: data-search evita innerText + reflow en cada tecla
+                        const subText = sNode.dataset.search || '';
                         const subMatch = subText.includes(_query);
 
                         const snips = sNode.querySelectorAll('.snippet-card[data-id]');
