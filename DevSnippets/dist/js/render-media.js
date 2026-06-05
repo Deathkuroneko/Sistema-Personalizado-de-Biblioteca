@@ -228,8 +228,12 @@ const RenderMedia = (() => {
 
         // Portada
         const imgUrl = Attachments.getDisplayUrl(cardObj.coverImage);
+        const thumbUrl = (typeof Attachments.getThumbnailUrl === 'function') 
+            ? Attachments.getThumbnailUrl(cardObj.coverImage) 
+            : imgUrl;
+            
         const coverHTML = imgUrl
-            ? `<img src="${imgUrl}" alt="${_escape(cardObj.title)}" class="media-card-cover" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+            ? `<img src="${thumbUrl || imgUrl}" alt="${_escape(cardObj.title)}" class="media-card-cover" loading="lazy" onerror="if(this.src!=='${imgUrl}'){this.src='${imgUrl}';}else{this.style.display='none';this.nextElementSibling.style.display='flex';}">`
             : '';
         const placeholderHTML = `<div class="media-card-cover-placeholder" style="${imgUrl ? 'display:none' : ''}">${_icon('image', 32)}</div>`;
 

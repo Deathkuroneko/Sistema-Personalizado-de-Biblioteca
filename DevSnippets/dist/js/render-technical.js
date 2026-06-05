@@ -362,7 +362,13 @@ const RenderTechnical = (() => {
                         </h4>
                         ${snipObj.description ? `<p class="snippet-desc">${_escape(snipObj.description)}</p>` : ''}
                     </div>
-                    ${ (snipObj.coverImage && typeof Attachments !== 'undefined') ? (function(){ const url = Attachments.getDisplayUrl(snipObj.coverImage); return url ? `<div class="snippet-thumbnail" onclick="ViewMedia.openImage('${url.replace(/'/g, "\\'")}', '${_escape(snipObj.title||'')}')"><img src="${url}" alt="thumbnail" loading="lazy"></div>` : ''; })() : '' }
+                    ${ (snipObj.coverImage && typeof Attachments !== 'undefined') ? (function(){ 
+                        const url = Attachments.getDisplayUrl(snipObj.coverImage); 
+                        const thumbUrl = (typeof Attachments.getThumbnailUrl === 'function') 
+                            ? Attachments.getThumbnailUrl(snipObj.coverImage) 
+                            : url;
+                        return url ? `<div class="snippet-thumbnail" onclick="ViewMedia.openImage('${url.replace(/'/g, "\\'")}', '${_escape(snipObj.title||'')}')"><img src="${thumbUrl}" onerror="this.onerror=null; if(this.src!=='${url}') this.src='${url}';" alt="thumbnail" loading="lazy"></div>` : ''; 
+                    })() : '' }
                     <div style="display:flex;align-items:center;gap:4px;">
                         <button class="drag-handle btn-icon" title="Arrastrar para reordenar">
                             ${_icon('grip-vertical', 15)}

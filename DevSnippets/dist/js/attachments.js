@@ -66,9 +66,9 @@ const Attachments = (() => {
             if (lastSlash >= 0 && lastDot > lastSlash) {
                 const dir = relativePath.substring(0, lastSlash);
                 const name = relativePath.substring(lastSlash + 1, lastDot);
-                thumbRel = `${dir}/thumb/${name}_thumb.jpg`;
+                thumbRel = `${dir}/thumb/${name}_thumb.webp`;
             } else if (lastDot > 0) {
-                thumbRel = relativePath.substring(0, lastDot) + '_thumb.jpg';
+                thumbRel = relativePath.substring(0, lastDot) + '_thumb.webp';
             }
             const absPath = `${_docDirPath}DevSnippets\\${thumbRel.replace(/\//g, '\\')}`;
             return window.__TAURI__.core.convertFileSrc(absPath, 'asset');
@@ -155,7 +155,7 @@ const Attachments = (() => {
                     canvas.toBlob(blob => {
                         if (blob) resolve(blob);
                         else reject(new Error('Canvas toBlob falló'));
-                    }, 'image/jpeg', 0.85);
+                    }, 'image/webp', 0.85);
                 };
                 img.onerror = () => reject(new Error('Error cargando imagen para thumbnail'));
                 img.src = e.target.result;
@@ -183,7 +183,7 @@ const Attachments = (() => {
             const destPath = `DevSnippets/${relPath}`;
             
             // Ruta del thumbnail (en subcarpeta /thumb/)
-            const thumbName = `${cardId}_${uniqueId}_thumb.jpg`;
+            const thumbName = `${cardId}_${uniqueId}_thumb.webp`;
             const thumbRelPath = `attachments/${attachmentType}/thumb/${thumbName}`;
             const thumbDestPath = `DevSnippets/${thumbRelPath}`;
 
@@ -307,9 +307,9 @@ const Attachments = (() => {
                 if (lastSlash >= 0 && lastDot > lastSlash) {
                     const dir = relativePath.substring(0, lastSlash);
                     const name = relativePath.substring(lastSlash + 1, lastDot);
-                    thumbRel = `${dir}/thumb/${name}_thumb.jpg`;
+                    thumbRel = `${dir}/thumb/${name}_thumb.webp`;
                 } else if (lastDot > 0) {
-                    thumbRel = relativePath.substring(0, lastDot) + '_thumb.jpg';
+                    thumbRel = relativePath.substring(0, lastDot) + '_thumb.webp';
                 }
                 const thumbDestPath = `DevSnippets/${thumbRel}`;
 
