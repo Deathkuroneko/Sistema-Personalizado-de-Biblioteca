@@ -108,7 +108,18 @@ const GalleryTech = (() => {
                 <img alt="${_escape(item.title)}">
                 <span>${_escape(item.title)}</span>
             `;
-            btn.querySelector('img').src = item.url;
+            const imgEl = btn.querySelector('img');
+            imgEl.src = item.url;
+            imgEl.addEventListener('error', () => {
+                // Remove stale thumbnail from grid and update count
+                try {
+                    btn.remove();
+                    _items = _items.filter(it => it.path !== item.path);
+                    const countEl = root.querySelector('.tech-gallery-count');
+                    if (countEl) countEl.textContent = `${_items.length} imagen${_items.length === 1 ? '' : 'es'}`;
+                    if (typeof App !== 'undefined') App.showToast('Imagen no encontrada, eliminada de la galería', false);
+                } catch (e) {}
+            });
             btn.addEventListener('click', () => openPreview(idx));
             grid.appendChild(btn);
         });

@@ -846,6 +846,33 @@ const Editor = (() => {
         return btn;
     }
 
+    // Escuchar eventos de attachment procesado y aplicar guardado automático
+    try {
+        if (typeof window !== 'undefined' && window.addEventListener) {
+            window.addEventListener('attachment:processed', (ev) => {
+                try {
+                    const d = ev && ev.detail ? ev.detail : null;
+                    if (!d || !d.cardId) return;
+                    const cardId = d.cardId;
+                    const rel = d.relativePath;
+                    // Evitar sobrescribir si el usuario está editando en este momento
+                    const editingEl = document.querySelector(`.snippet-card[data-id="${cardId}"][data-editing], .media-card[data-id="${cardId}"][data-editing]`);
+                    if (editingEl) return;
+
+                    // Intentar aplicar al snippet o card guardado
+                    if (typeof Storage !== 'undefined') {
+                        if (Storage.editSnippetById) {
+                            try { Storage.editSnippetById(cardId, { coverImage: rel }); } catch (e) {}
+                        }
+                        if (Storage.editCardById) {
+                            try { Storage.editCardById(cardId, { coverImage: rel }); } catch (e) {}
+                        }
+                    }
+                } catch (e) { console.warn('[Editor] attachment:processed handler error', e); }
+            });
+        }
+    } catch (e) {}
+
     return {
         addTitle, editTitle,
         addCategory, editCategory,

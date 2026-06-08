@@ -152,35 +152,50 @@
 }
 .tech-gallery-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 10px;
-    padding: 14px;
+    /* Fixed thumbnail column width so thumbnails don't stretch */
+    grid-template-columns: repeat(auto-fit, 220px);
+    /* Fixed row height to match thumbnail height */
+    grid-auto-rows: 240px;
+    gap: 12px;
+    padding: 12px;
+    justify-content: start;
     overflow: auto;
 }
 .tech-gallery-thumb {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* fill grid cell */
     min-width: 0;
-    padding: 0;
     overflow: hidden;
     text-align: left;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 10px;
+    box-sizing: border-box;
+    transition: box-shadow 0.15s ease, border-color 0.12s ease;
 }
 .tech-gallery-thumb:hover {
     border-color: var(--primary);
     background: var(--surface-hover);
+    /* No vertical lift to avoid overlapping neighbors */
+    transform: none;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
 }
 .tech-gallery-thumb img {
-    display: block;
+    /* Fill the available thumbnail area (caption excluded) and crop consistently */
     width: 100%;
-    aspect-ratio: 4 / 3;
+    height: calc(100% - 40px);
     object-fit: cover;
     background: var(--bg);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    display: block;
 }
 .tech-gallery-thumb span {
-    display: block;
-    padding: 8px 9px;
+    height: 40px;
+    line-height: 40px;
+    padding: 0 12px;
+    box-sizing: border-box;
     color: var(--text-muted);
     font-size: 12px;
     overflow: hidden;

@@ -894,6 +894,30 @@ const Editor = (() => {
         return btn;
     }
 
+    // Listen for processed attachments and auto-apply to storage
+    try {
+        if (typeof window !== 'undefined' && window.addEventListener) {
+            window.addEventListener('attachment:processed', (ev) => {
+                try {
+                    const d = ev && ev.detail ? ev.detail : null;
+                    if (!d || !d.cardId) return;
+                    const cardId = d.cardId;
+                    const rel = d.relativePath;
+                    const editingEl = document.querySelector(`.snippet-card[data-id="${cardId}"][data-editing], .media-card[data-id="${cardId}"][data-editing]`);
+                    if (editingEl) return;
+                    if (typeof Storage !== 'undefined') {
+                        if (Storage.editSnippetById) {
+                            try { Storage.editSnippetById(cardId, { coverImage: rel }); } catch (e) {}
+                        }
+                        if (Storage.editCardById) {
+                            try { Storage.editCardById(cardId, { coverImage: rel }); } catch (e) {}
+                        }
+                    }
+                } catch (e) { console.warn('[Editor] attachment:processed handler error', e); }
+            });
+        }
+    } catch (e) {}
+
     return {
         addTitle, editTitle,
         addCategory, editCategory,

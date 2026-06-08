@@ -232,6 +232,13 @@ const Attachments = (() => {
             }
 
             console.debug('[Attachments] Imagen procesada (AVIF) y guardada en:', relPath);
+            // Notify listeners in the UI that the attachment finished processing
+            try {
+                if (typeof window !== 'undefined' && window.dispatchEvent) {
+                    window.dispatchEvent(new CustomEvent('attachment:processed', { detail: { cardId, relativePath: relPath, displayUrl } }));
+                }
+            } catch (e) { console.warn('[Attachments] Could not dispatch attachment:processed event', e); }
+
             if (onSuccess) onSuccess({ relativePath: relPath, displayUrl });
 
         } catch (e) {

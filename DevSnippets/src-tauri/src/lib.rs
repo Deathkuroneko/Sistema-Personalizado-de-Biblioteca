@@ -115,7 +115,7 @@ async fn convert_existing_image(
         return Err(format!("File does not exist: {:?}", abs_path));
     }
     
-    let image_bytes = fs::read(&abs_path).map_err(|e| format!("Failed to read image: {}", e))?;
+    // No necesitamos leer los bytes aquí: `process_and_save_image` volverá a leer el archivo.
     
     let path = std::path::Path::new(&relative_path);
     let file_stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("migrated_img");
