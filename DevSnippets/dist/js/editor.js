@@ -673,18 +673,23 @@ const Editor = (() => {
                     <button id="ef_remove_block" class="btn" type="button">Quitar bloque</button>
                 </div>
                 <div id="ef_blocks"></div>
-                <div class="snippet-image-editor">
+                <div class="snippet-image-editor" style="position:relative;">
                     ${coverUrl ? `
-                        <div class="image-preview">
+                        <div class="image-preview" style="position:relative;">
                             <img src="${coverUrl}" alt="thumbnail">
                                 ${isStaged ? `<span class="draft-badge">Pendiente</span>` : ''}
+                            <div id="img-progress-${snipObj.id}" class="img-progress-overlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.6);color:white;align-items:center;justify-content:center;font-size:0.8em;text-align:center;border-radius:6px;flex-direction:column;gap:4px;"></div>
                             <div class="img-actions">
                                 <button id="ef_change_image" class="btn">Cambiar imagen</button>
                                 <button id="ef_remove_image" class="btn btn-danger">Eliminar imagen</button>
                             </div>
                         </div>
-                    ` : `<button id="ef_select_image" class="btn">Seleccionar imagen</button>`}
-                </div>
+                    ` : `
+                        <div style="position:relative;">
+                            <button id="ef_select_image" class="btn">Seleccionar imagen</button>
+                            <div id="img-progress-${snipObj.id}" class="img-progress-overlay" style="display:none;position:absolute;inset:0;background:var(--bg-secondary);color:var(--text-main);align-items:center;justify-content:center;font-size:0.8em;text-align:center;border-radius:6px;padding:8px;"></div>
+                        </div>
+                    `}
                 </div>
                 <div class="snippet-edit-actions">
                     <button id="ef_save" class="btn-primary">${_icon('check', 14)} Guardar</button>

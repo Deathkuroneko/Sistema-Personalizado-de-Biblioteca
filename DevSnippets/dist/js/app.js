@@ -166,6 +166,66 @@ const App = (() => {
         }
     }
 
+    // ── Script de Migración AVIF ────────────────────────────────
+    async function migrateImagesToAvif() {
+        if (!confirm('¿Deseas migrar todas las imágenes existentes a AVIF? Esto puede tardar varios minutos y consumirá CPU.')) return;
+        
+        showToast('Iniciando migración a AVIF...', false);
+        const invoke = window.__TAURI__?.core?.invoke || window.__TAURI__?.invoke;
+        if (!invoke) {
+            showToast('Error: No estamos en Tauri', false);
+            return;
+        }
+
+        const titles = Storage.getTitles();
+        let migratedCount = 0;
+        let errorCount = 0;
+
+        for (const t of titles) {
+            // Technical
+            if (t.categories) {
+                for (const cat of t.categories) {
+                    for (const sub of (cat.subtitles || [])) {
+                        for (const snip of (sub.snippets || [])) {
+                            if (snip.coverImage && !snip.coverImage.endsWith('.avif') && !snip.coverImage.startsWith('data:')) {
+                                try {
+                                    const [newRel, newThumb] = await invoke('convert_existing_image', { relativePath: snip.coverImage });
+                                    snip.coverImage = newRel;
+                                    migratedCount++;
+                                    console.log(`[Migrate] Migrado: ${newRel}`);
+                                } catch (e) {
+                                    errorCount++;
+                                    console.error(`[Migrate] Error migrando ${snip.coverImage}:`, e);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            // Media
+            if (t.collections) {
+                for (const col of t.collections) {
+                    for (const card of (col.cards || [])) {
+                        if (card.coverImage && !card.coverImage.endsWith('.avif') && !card.coverImage.startsWith('data:')) {
+                            try {
+                                const [newRel, newThumb] = await invoke('convert_existing_image', { relativePath: card.coverImage });
+                                card.coverImage = newRel;
+                                migratedCount++;
+                                console.log(`[Migrate] Migrado: ${newRel}`);
+                            } catch (e) {
+                                errorCount++;
+                                console.error(`[Migrate] Error migrando ${card.coverImage}:`, e);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        await Storage.save(true, true);
+        showToast(`Migración completada. ${migratedCount} imágenes migradas, ${errorCount} errores.`, true);
+    }
+
     function exportJSON() {
         closeActiveDropdown();
         Storage.exportJSON();

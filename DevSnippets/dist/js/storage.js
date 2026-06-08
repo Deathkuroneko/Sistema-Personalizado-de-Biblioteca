@@ -584,6 +584,7 @@ const Storage = (() => {
                     if (lastSlash >= 0 && lastDot > lastSlash) {
                         const dir = ref.substring(0, lastSlash);
                         const name = ref.substring(lastSlash + 1, lastDot);
+                        set.add(`${dir}/thumb/${name}_thumb.avif`);
                         set.add(`${dir}/thumb/${name}_thumb.webp`);
                     }
                 }

@@ -171,8 +171,33 @@ const EditorMedia = (() => {
         if (!body) return;
 
         const cardObj  = Storage.getTitles()[tIdx].collections[colIdx].cards[cardIdx];
-        // Copia de trabajo — se guarda solo al hacer "Guardar"
-        let workCard   = JSON.parse(JSON.stringify(cardObj));
+        
+        // Inicializar buffer Drafts para esta ficha
+        try { if (typeof Drafts !== 'undefined' && Drafts.start) Drafts.start(cardObj.id, cardObj); } catch(e){}
+        const d = (typeof Drafts !== 'undefined' && Drafts.get) ? Drafts.get(cardObj.id) : null;
+
+        // Copia de trabajo — si hay un borrador pendiente lo usamos, sino copiamos la ficha real
+        let workCard   = d ? JSON.parse(JSON.stringify(d)) : JSON.parse(JSON.stringify(cardObj));
+        
+        // Helper to sync current UI fields into workCard
+        const _syncFormToWorkCard = () => {
+            workCard.title        = document.getElementById('df_title')?.value.trim() || workCard.title;
+            workCard.altTitle     = document.getElementById('df_altTitle')?.value.trim() || workCard.altTitle;
+            workCard.synopsis     = document.getElementById('df_synopsis')?.value.trim() || workCard.synopsis;
+            workCard.status       = document.getElementById('df_status')?.value || workCard.status;
+            const y = parseInt(document.getElementById('df_year')?.value);
+            workCard.year         = isNaN(y) ? null : y;
+            workCard.mediaSubtype = document.getElementById('df_mediaSubtype')?.value || workCard.mediaSubtype;
+            workCard.studio       = document.getElementById('df_studio')?.value.trim() || workCard.studio;
+            const s = parseInt(document.getElementById('df_seasons')?.value);
+            workCard.seasons      = isNaN(s) ? null : s;
+            const c = parseInt(document.getElementById('df_chapters')?.value);
+            workCard.chapters     = isNaN(c) ? null : c;
+            workCard.platform     = document.getElementById('df_platform')?.value.trim() || workCard.platform;
+            workCard.playtime     = document.getElementById('df_playtime')?.value.trim() || workCard.playtime;
+            workCard.progress     = document.getElementById('df_progress')?.value.trim() || workCard.progress;
+            workCard.notes        = document.getElementById('df_notes')?.value.trim() || workCard.notes;
+        };
 
         // ── Header del drawer ─────────────────────────────────
         const header = document.getElementById('media-drawer-title');
@@ -183,11 +208,13 @@ const EditorMedia = (() => {
 
         body.innerHTML = `
         <div class="drawer-cover-section" style="display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 16px;">
-            <div class="drawer-cover-wrap" id="drawer-cover-wrap">
+            <div class="drawer-cover-wrap" id="drawer-cover-wrap" style="position:relative;">
                 ${imgUrl
-                    ? `<img id="drawer-cover-img" src="${imgUrl}" alt="Portada" class="drawer-cover-img">`
+                    ? `<img id="drawer-cover-img" src="${imgUrl}" alt="Portada" class="drawer-cover-img">
+                       ${workCard.coverImage !== cardObj.coverImage ? `<span class="draft-badge" style="position:absolute;top:4px;right:4px;">Pendiente</span>` : ''}`
                     : `<div id="drawer-cover-placeholder" class="drawer-cover-placeholder">${_icon('image', 40)}</div>`
                 }
+                <div id="img-progress-${cardObj.id}" class="img-progress-overlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.6);color:white;align-items:center;justify-content:center;font-size:0.8em;text-align:center;border-radius:6px;flex-direction:column;gap:4px;"></div>
                 <button type="button" class="drawer-cover-btn" id="drawer-cover-btn" title="Cambiar portada">
                     ${_icon('camera', 16)} Portada
                 </button>
@@ -363,9 +390,14 @@ const EditorMedia = (() => {
         const removeCoverBtn = document.getElementById('drawer-cover-remove-btn');
         removeCoverBtn.addEventListener('click', () => {
             workCard.coverImage = null;
+            _syncFormToWorkCard();
+            try { if (typeof Drafts !== 'undefined' && Drafts.update) Drafts.update(cardObj.id, workCard); } catch(e){}
+
             const wrap = document.getElementById('drawer-cover-wrap');
             let img = document.getElementById('drawer-cover-img');
             if (img) img.remove();
+            let badge = wrap.querySelector('.draft-badge');
+            if (badge) badge.remove();
             let ph = document.getElementById('drawer-cover-placeholder');
             if (!ph) {
                 ph = document.createElement('div');
@@ -382,7 +414,20 @@ const EditorMedia = (() => {
         document.getElementById('drawer-cover-btn').addEventListener('click', () => {
             Attachments.selectAndCopy(cardObj.id, 'media', ({ relativePath, displayUrl }) => {
                 workCard.coverImage = relativePath;
+                _syncFormToWorkCard();
+                try { if (typeof Drafts !== 'undefined' && Drafts.update) Drafts.update(cardObj.id, workCard); } catch(e){}
+
+                // Only update DOM if this card is still the one currently open in the drawer
+                const isOpenCard = _currentCard && 
+                                   Storage.getTitles()[_currentCard.tIdx] &&
+                                   Storage.getTitles()[_currentCard.tIdx].collections[_currentCard.colIdx] &&
+                                   Storage.getTitles()[_currentCard.tIdx].collections[_currentCard.colIdx].cards[_currentCard.cardIdx]?.id === cardObj.id;
+                                   
+                if (!isOpenCard) return;
+
                 const wrap = document.getElementById('drawer-cover-wrap');
+                if (!wrap) return;
+                
                 // Actualizar preview
                 let img = document.getElementById('drawer-cover-img');
                 if (!img) {
@@ -394,6 +439,17 @@ const EditorMedia = (() => {
                     wrap.prepend(img);
                 }
                 img.src = displayUrl || relativePath;
+                
+                let badge = wrap.querySelector('.draft-badge');
+                if (!badge) {
+                    badge = document.createElement('span');
+                    badge.className = 'draft-badge';
+                    badge.textContent = 'Pendiente';
+                    badge.style.position = 'absolute';
+                    badge.style.top = '4px';
+                    badge.style.right = '4px';
+                    img.after(badge);
+                }
                 
                 removeCoverBtn.style.display = 'inline-flex';
 
@@ -477,9 +533,11 @@ const EditorMedia = (() => {
         // ── Guardar / Cancelar ────────────────────────────────
         document.getElementById('drawer-save-btn').addEventListener('click', () => {
             _saveDrawer(tIdx, colIdx, cardIdx, workCard);
+            try { if (typeof Drafts !== 'undefined' && Drafts.discard) Drafts.discard(cardObj.id); } catch(e){}
         });
         document.getElementById('drawer-cancel-btn').addEventListener('click', () => {
             closeDrawer();
+            try { if (typeof Drafts !== 'undefined' && Drafts.discard) Drafts.discard(cardObj.id); } catch(e){}
         });
 
         // Actualizar título del drawer al escribir

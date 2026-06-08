@@ -66,9 +66,9 @@ const Attachments = (() => {
             if (lastSlash >= 0 && lastDot > lastSlash) {
                 const dir = relativePath.substring(0, lastSlash);
                 const name = relativePath.substring(lastSlash + 1, lastDot);
-                thumbRel = `${dir}/thumb/${name}_thumb.webp`;
+                thumbRel = `${dir}/thumb/${name}_thumb.avif`;
             } else if (lastDot > 0) {
-                thumbRel = relativePath.substring(0, lastDot) + '_thumb.webp';
+                thumbRel = relativePath.substring(0, lastDot) + '_thumb.avif';
             }
             const absPath = `${_docDirPath}DevSnippets\\${thumbRel.replace(/\//g, '\\')}`;
             return window.__TAURI__.core.convertFileSrc(absPath, 'asset');
@@ -88,13 +88,33 @@ const Attachments = (() => {
      * @param {Function} onSuccess - cb({ relativePath, displayUrl })
      * @param {Function} onError   - cb(errorMessage)
      */
-    function selectAndCopy(cardId, type, onSuccess, onError) {
+    async function selectAndCopy(cardId, type, onSuccess, onError) {
         if (typeof type === 'function') {
             onError = onSuccess;
             onSuccess = type;
             type = 'technical';
         }
 
+        if (_isTauri()) {
+            const invoke = window.__TAURI__.core.invoke || window.__TAURI__.invoke;
+            try {
+                const selectedPath = await invoke('plugin:dialog|open', {
+                    options: {
+                        multiple: false,
+                        filters: [{ name: 'Imágenes', extensions: ['png', 'jpeg', 'jpg', 'webp', 'avif'] }]
+                    }
+                });
+                if (!selectedPath) return; // User cancelled
+                
+                await _copyToAttachmentsTauri(selectedPath, cardId, type, onSuccess, onError);
+            } catch (e) {
+                console.error("[Attachments] Error abriendo selector de archivos Tauri:", e);
+                if (onError) onError(e.message || 'Error al abrir selector de archivos');
+            }
+            return;
+        }
+
+        // Fallback browser mode
         const input = document.createElement('input');
         input.type   = 'file';
         input.accept = 'image/*';
@@ -107,11 +127,7 @@ const Attachments = (() => {
             if (!file) return;
 
             try {
-                if (_isTauri()) {
-                    await _copyToAttachments(file, cardId, type, onSuccess, onError);
-                } else {
-                    _toBase64(file, onSuccess, onError);
-                }
+                _toBase64(file, onSuccess, onError);
             } catch (e) {
                 if (onError) onError(e.message || 'Error al procesar imagen');
             }
@@ -165,57 +181,57 @@ const Attachments = (() => {
         });
     }
 
+    let _progressToast = null;
+
     /**
-     * Copia el archivo a Documents/DevSnippets/attachments/{media|technical}/
-     * usando el plugin tauri-plugin-fs. Genera también un _thumb.jpg.
+     * Pasa la ruta física a Rust para procesamiento (0ms UI freeze)
      */
-    async function _copyToAttachments(file, cardId, type, onSuccess, onError) {
+    async function _copyToAttachmentsTauri(absPath, cardId, type, onSuccess, onError) {
         try {
-            const { BaseDirectory } = window.__TAURI__.fs;
             const attachmentType = _normalizeAttachmentType(type);
-
-            // Nombre único: timestamp + extensión
-            const ext      = file.name.split('.').pop().toLowerCase();
-            const uniqueId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now();
-            const safeName = `${cardId}_${uniqueId}.${ext}`;
-            // Construir rutas de guardado
-            const relPath  = `attachments/${attachmentType}/${safeName}`;
-            const destPath = `DevSnippets/${relPath}`;
+            const invoke = window.__TAURI__.core.invoke || window.__TAURI__.invoke;
+            const listen = window.__TAURI__.event?.listen || window.__TAURI__.core?.listen;
             
-            // Ruta del thumbnail (en subcarpeta /thumb/)
-            const thumbName = `${cardId}_${uniqueId}_thumb.webp`;
-            const thumbRelPath = `attachments/${attachmentType}/thumb/${thumbName}`;
-            const thumbDestPath = `DevSnippets/${thumbRelPath}`;
-
-            // Leer el archivo como ArrayBuffer y escribir original
-            const buffer = await file.arrayBuffer();
-            const { writeFile, mkdir, BaseDirectory: BD } = window.__TAURI__.fs;
-            if (typeof mkdir === 'function') {
-                await mkdir(`DevSnippets/attachments/${attachmentType}`, { baseDir: BD.Document, recursive: true });
+            let unlisten = null;
+            if (listen) {
+                // P-14b: Escuchar eventos de progreso desde Rust
+                unlisten = await listen('image-progress', (event) => {
+                    if (event.payload.card_id === cardId) {
+                        const msg = `[${event.payload.progress}%]<br/>${event.payload.status}`;
+                        const progressEl = document.getElementById(`img-progress-${cardId}`);
+                        if (progressEl) {
+                            progressEl.innerHTML = `<span>${msg}</span>`;
+                            progressEl.style.display = 'flex';
+                        } else {
+                            if (typeof App !== 'undefined') App.showToast(`[${event.payload.progress}%] ${event.payload.status}`, false);
+                        }
+                    }
+                });
             }
-            await writeFile(destPath, new Uint8Array(buffer), { baseDir: BD.Document });
 
-            // Generar y escribir thumbnail de forma segura (no rompe si falla)
-            try {
-                const thumbBlob = await _generateThumbnail(file, 256);
-                const thumbBuffer = await thumbBlob.arrayBuffer();
-                if (typeof mkdir === 'function') {
-                    await mkdir(`DevSnippets/attachments/${attachmentType}/thumb`, { baseDir: BD.Document, recursive: true });
-                }
-                await writeFile(thumbDestPath, new Uint8Array(thumbBuffer), { baseDir: BD.Document });
-                console.debug('[Attachments] Thumbnail guardado:', thumbDestPath);
-            } catch (thumbErr) {
-                console.error('[Attachments] No se pudo crear el thumbnail:', thumbErr);
-            }
+            const thumbSize = attachmentType === 'media' ? 512 : 256;
+            
+            // Rust se encarga de leer el path absoluto y procesar
+            const [relPath, thumbRelPath] = await invoke('process_and_save_image', {
+                sourcePath: absPath,
+                cardId: cardId,
+                typeDir: attachmentType,
+                thumbSize: thumbSize
+            });
+
+            if (unlisten) unlisten();
+            
+            const progressEl = document.getElementById(`img-progress-${cardId}`);
+            if (progressEl) progressEl.style.display = 'none';
 
             // Construir URL de visualización
             let displayUrl = null;
             if (window.__TAURI__.core && window.__TAURI__.core.convertFileSrc && _docDirPath) {
-                const absPath = `${_docDirPath}DevSnippets\\${relPath}`;
+                const absPath = `${_docDirPath}DevSnippets\\${relPath.replace(/\//g, '\\')}`;
                 displayUrl = window.__TAURI__.core.convertFileSrc(absPath, 'asset');
             }
 
-            console.debug('[Attachments] Imagen copiada a:', destPath);
+            console.debug('[Attachments] Imagen procesada (AVIF) y guardada en:', relPath);
             if (onSuccess) onSuccess({ relativePath: relPath, displayUrl });
 
         } catch (e) {
@@ -307,9 +323,9 @@ const Attachments = (() => {
                 if (lastSlash >= 0 && lastDot > lastSlash) {
                     const dir = relativePath.substring(0, lastSlash);
                     const name = relativePath.substring(lastSlash + 1, lastDot);
-                    thumbRel = `${dir}/thumb/${name}_thumb.webp`;
+                    thumbRel = `${dir}/thumb/${name}_thumb.avif`;
                 } else if (lastDot > 0) {
-                    thumbRel = relativePath.substring(0, lastDot) + '_thumb.webp';
+                    thumbRel = relativePath.substring(0, lastDot) + '_thumb.avif';
                 }
                 const thumbDestPath = `DevSnippets/${thumbRel}`;
 
