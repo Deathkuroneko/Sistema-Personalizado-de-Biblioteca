@@ -906,12 +906,34 @@ const Editor = (() => {
                     const editingEl = document.querySelector(`.snippet-card[data-id="${cardId}"][data-editing], .media-card[data-id="${cardId}"][data-editing]`);
                     if (editingEl) return;
                     if (typeof Storage !== 'undefined') {
-                        if (Storage.editSnippetById) {
-                            try { Storage.editSnippetById(cardId, { coverImage: rel }); } catch (e) {}
-                        }
-                        if (Storage.editCardById) {
-                            try { Storage.editCardById(cardId, { coverImage: rel }); } catch (e) {}
-                        }
+                        try {
+                            if (Storage.findSnippetById) {
+                                const found = Storage.findSnippetById(cardId);
+                                if (found) {
+                                    if (Storage.saveStateForUndo) Storage.saveStateForUndo();
+                                    Object.assign(found.item, { coverImage: rel });
+                                    Storage.save && Storage.save(false);
+                                    return;
+                                }
+                            }
+
+                            if (Storage.findCardById) {
+                                const foundCard = Storage.findCardById(cardId);
+                                if (foundCard) {
+                                    if (Storage.saveStateForUndo) Storage.saveStateForUndo();
+                                    Object.assign(foundCard.item, { coverImage: rel });
+                                    Storage.save && Storage.save(false);
+                                    return;
+                                }
+                            }
+
+                            if (Storage.editSnippetById) {
+                                try { Storage.editSnippetById(cardId, { coverImage: rel }); } catch (e) {}
+                            }
+                            if (Storage.editCardById) {
+                                try { Storage.editCardById(cardId, { coverImage: rel }); } catch (e) {}
+                            }
+                        } catch (e) { console.warn('[Editor] attachment:processed storage apply error', e); }
                     }
                 } catch (e) { console.warn('[Editor] attachment:processed handler error', e); }
             });
